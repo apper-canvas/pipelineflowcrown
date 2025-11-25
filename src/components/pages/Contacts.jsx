@@ -252,10 +252,9 @@ const handleContactSave = (savedContact) => {
       setDeleteModal({ isOpen: false, contact: null })
     } catch (error) {
       toast.error(error.message || "Failed to delete contact")
-    } finally {
+} finally {
       setIsDeleting(false)
     }
-}
   }
 
 const getInitials = (name) => {

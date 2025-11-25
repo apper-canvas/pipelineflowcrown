@@ -32,8 +32,8 @@ async create(contactData) {
       throw new Error("Please enter a valid email address")
     }
     
-    // Validate phone format if provided (basic validation)
-    if (contactData.phone && !/^[\+]?[\d\s\-\(\)]+$/.test(contactData.phone)) {
+// Validate phone format if provided (basic validation)
+    if (contactData.phone && !/^[+]?[\d\s\-()]+$/.test(contactData.phone)) {
       throw new Error("Please enter a valid phone number")
     }
     
@@ -66,8 +66,8 @@ async update(id, contactData) {
       throw new Error("Please enter a valid email address")
     }
     
-    // Validate phone format if provided (basic validation)
-    if (contactData.phone && !/^[\+]?[\d\s\-\(\)]+$/.test(contactData.phone)) {
+// Validate phone format if provided (basic validation)
+    if (contactData.phone && !/^[+]?[\d\s\-()]+$/.test(contactData.phone)) {
       throw new Error("Please enter a valid phone number")
     }
     
