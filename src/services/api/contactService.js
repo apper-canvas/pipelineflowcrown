@@ -1,4 +1,4 @@
-import contactsData from "@/services/mockData/contacts.json"
+import contactsData from "@/services/mockData/contacts.json";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -81,10 +81,47 @@ async update(id, contactData) {
     contacts[index] = updatedContact
     return { ...updatedContact }
   },
-
-  async delete(id) {
+async delete(id) {
     await delay(200)
     contacts = contacts.filter(c => c.Id !== parseInt(id))
     return true
+  },
+
+  async bulkDelete(ids) {
+    await delay(300)
+    const idsToDelete = ids.map(id => parseInt(id))
+    contacts = contacts.filter(c => !idsToDelete.includes(c.Id))
+    return { deleted: idsToDelete.length }
+  },
+async updateAvatar(id, avatarData) {
+    await delay(200)
+    const contactIndex = contacts.findIndex(c => c.Id === parseInt(id))
+    if (contactIndex === -1) {
+      throw new Error('Contact not found')
+    }
+    contacts[contactIndex] = {
+      ...contacts[contactIndex],
+      avatar: avatarData
+    }
+    return contacts[contactIndex]
+  },
+async exportToCsv() {
+    await delay(100)
+    const headers = ['Id', 'Name', 'Email', 'Phone', 'Company', 'Position', 'Created At', 'Last Contacted']
+    const csvData = [
+      headers.join(','),
+      ...contacts.map(contact => [
+        contact.Id,
+        `"${(contact.name || '').replace(/"/g, '""')}"`,
+        `"${(contact.email || '').replace(/"/g, '""')}"`,
+        `"${(contact.phone || '').replace(/"/g, '""')}"`,
+        `"${(contact.company || '').replace(/"/g, '""')}"`,
+        `"${(contact.position || '').replace(/"/g, '""')}"`,
+        contact.createdAt ? new Date(contact.createdAt).toLocaleDateString() : '',
+        contact.lastContactedAt ? new Date(contact.lastContactedAt).toLocaleDateString() : ''
+      ].join(','))
+    ].join('\n')
+    
+    return csvData
   }
 }

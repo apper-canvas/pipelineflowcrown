@@ -11,7 +11,7 @@ import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 import SearchBar from "@/components/molecules/SearchBar";
-
+import { activityService } from "@/services/api/activityService";
 const ContactModal = ({ isOpen, contact, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -194,9 +194,15 @@ const Contacts = () => {
   const [selectedContact, setSelectedContact] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
+const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedContact, setExpandedContact] = useState(null)
+  const [selectedContacts, setSelectedContacts] = useState([])
+  const [contactActivities, setContactActivities] = useState({})
+  const [showTimeline, setShowTimeline] = useState({ isOpen: false, contact: null })
+  const [showAvatarUpload, setShowAvatarUpload] = useState({ isOpen: false, contact: null })
+  const [isExporting, setIsExporting] = useState(false)
+
   useEffect(() => {
 loadContacts()
   }, [])
@@ -215,6 +221,28 @@ useEffect(() => {
       setFilteredContacts(contacts)
     }
   }, [contacts, searchTerm])
+
+  // Load activities for all contacts
+  useEffect(() => {
+    const loadActivities = async () => {
+      try {
+        const activities = await activityService.getAll()
+        const activitiesByContact = activities.reduce((acc, activity) => {
+          if (activity.contactId) {
+            if (!acc[activity.contactId]) {
+              acc[activity.contactId] = []
+            }
+            acc[activity.contactId].push(activity)
+          }
+          return acc
+        }, {})
+        setContactActivities(activitiesByContact)
+      } catch (error) {
+        console.error('Failed to load activities:', error)
+      }
+    }
+    loadActivities()
+  }, [])
 
 const loadContacts = async () => {
     try {
@@ -237,7 +265,7 @@ const handleContactSave = (savedContact) => {
     }
   }
 
-  const handleDelete = (contact) => {
+const handleDelete = (contact) => {
     setDeleteModal({ isOpen: true, contact })
   }
 
@@ -252,8 +280,86 @@ const handleContactSave = (savedContact) => {
       setDeleteModal({ isOpen: false, contact: null })
     } catch (error) {
       toast.error(error.message || "Failed to delete contact")
-} finally {
+    } finally {
       setIsDeleting(false)
+    }
+  }
+
+  const handleBulkDelete = async () => {
+    if (selectedContacts.length === 0) return
+    
+    if (!confirm(`Are you sure you want to delete ${selectedContacts.length} contact(s)?`)) {
+      return
+    }
+
+    setIsDeleting(true)
+    try {
+      await contactService.bulkDelete(selectedContacts)
+      setContacts(contacts.filter(c => !selectedContacts.includes(c.Id)))
+      toast.success(`${selectedContacts.length} contact(s) deleted successfully`)
+      setSelectedContacts([])
+    } catch (error) {
+      toast.error(error.message || "Failed to delete contacts")
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleSelectContact = (contactId) => {
+    setSelectedContacts(prev => 
+      prev.includes(contactId)
+        ? prev.filter(id => id !== contactId)
+        : [...prev, contactId]
+    )
+  }
+
+  const handleSelectAll = () => {
+    if (selectedContacts.length === filteredContacts.length) {
+      setSelectedContacts([])
+    } else {
+      setSelectedContacts(filteredContacts.map(c => c.Id))
+    }
+  }
+
+  const handleExportCsv = async () => {
+    setIsExporting(true)
+    try {
+      const csvData = await contactService.exportToCsv()
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      const url = URL.createObjectURL(blob)
+      link.setAttribute('href', url)
+      link.setAttribute('download', `contacts-${new Date().toISOString().split('T')[0]}.csv`)
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      toast.success('Contacts exported successfully')
+    } catch (error) {
+      toast.error(error.message || 'Failed to export contacts')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleAvatarUpload = async (contactId, file) => {
+    if (!file) return
+
+    try {
+      const reader = new FileReader()
+      reader.onload = async (e) => {
+        try {
+          await contactService.updateAvatar(contactId, e.target.result)
+          const updatedContacts = await contactService.getAll()
+          setContacts(updatedContacts)
+          toast.success('Profile picture updated successfully')
+          setShowAvatarUpload({ isOpen: false, contact: null })
+        } catch (error) {
+          toast.error(error.message || 'Failed to update profile picture')
+        }
+      }
+      reader.readAsDataURL(file)
+    } catch (error) {
+      toast.error('Failed to process image file')
     }
   }
 
@@ -275,16 +381,27 @@ const getInitials = (name) => {
             Manage your customer relationships and contact information.
           </p>
         </div>
-        <Button 
-          onClick={() => {
-            setSelectedContact(null)
-            setIsModalOpen(true)
-          }}
-          className="flex items-center space-x-2"
-        >
-          <ApperIcon name="Plus" className="h-4 w-4" />
-          <span>Add Contact</span>
-        </Button>
+<div className="flex items-center space-x-2">
+          <Button 
+            onClick={handleExportCsv}
+            disabled={isExporting}
+            variant="secondary"
+            className="flex items-center space-x-2"
+          >
+            <ApperIcon name={isExporting ? "Loader2" : "Download"} className={`h-4 w-4 ${isExporting ? 'animate-spin' : ''}`} />
+            <span>Export CSV</span>
+          </Button>
+          <Button 
+            onClick={() => {
+              setSelectedContact(null)
+              setIsModalOpen(true)
+            }}
+            className="flex items-center space-x-2"
+          >
+            <ApperIcon name="Plus" className="h-4 w-4" />
+            <span>Add Contact</span>
+          </Button>
+        </div>
       </div>
 
       {/* Search and Filters */}
@@ -302,6 +419,51 @@ const getInitials = (name) => {
         </select>
       </div>
 
+      {/* Bulk Actions Toolbar */}
+      {selectedContacts.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <span className="text-sm font-medium text-blue-700">
+              {selectedContacts.length} contact(s) selected
+            </span>
+            <div className="flex items-center space-x-2">
+              <Button
+                onClick={handleBulkDelete}
+                disabled={isDeleting}
+                variant="secondary"
+                size="sm"
+                className="text-red-600 hover:text-red-700"
+              >
+                <ApperIcon name="Trash2" className="h-4 w-4 mr-1" />
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+          <Button
+            onClick={() => setSelectedContacts([])}
+            variant="ghost"
+            size="sm"
+          >
+            <ApperIcon name="X" className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
+
+      {/* Select All Checkbox */}
+      {filteredContacts.length > 0 && (
+        <div className="flex items-center space-x-2 py-2">
+          <input
+            type="checkbox"
+            checked={selectedContacts.length === filteredContacts.length}
+            onChange={handleSelectAll}
+            className="rounded border-gray-300 focus:ring-primary-500"
+          />
+          <label className="text-sm text-gray-600">
+            Select all ({filteredContacts.length})
+          </label>
+        </div>
+      )}
+
       {/* Contacts Grid */}
 {filteredContacts.length === 0 ? (
         <Empty 
@@ -315,19 +477,52 @@ const getInitials = (name) => {
           }}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredContacts.map((contact) => (
             <div 
               key={contact.Id} 
-              className="card hover:shadow-lg transition-all duration-200 cursor-pointer group"
-              onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
+              className={`card hover:shadow-lg transition-all duration-200 group relative ${selectedContacts.includes(contact.Id) ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
             >
+              {/* Selection Checkbox */}
+              <div className="absolute top-4 left-4 z-10">
+                <input
+                  type="checkbox"
+                  checked={selectedContacts.includes(contact.Id)}
+                  onChange={() => handleSelectContact(contact.Id)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="rounded border-gray-300 focus:ring-primary-500"
+                />
+              </div>
+              
+              <div 
+                className="cursor-pointer pl-8"
+                onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
+              >
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3 flex-1">
-                  <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                    <span className="text-sm font-semibold text-white">
-                      {getInitials(contact.name)}
-                    </span>
+<div className="relative">
+                    {contact.avatar ? (
+                      <img 
+                        src={contact.avatar} 
+                        alt={contact.name}
+                        className="h-12 w-12 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                        <span className="text-sm font-semibold text-white">
+                          {getInitials(contact.name)}
+                        </span>
+                      </div>
+                    )}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowAvatarUpload({ isOpen: true, contact })
+                      }}
+                      className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                    >
+                      <ApperIcon name="Camera" className="h-3 w-3 text-gray-600" />
+                    </button>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
@@ -349,6 +544,16 @@ const getInitials = (name) => {
                 </div>
                 
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowTimeline({ isOpen: true, contact })
+                    }}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View Activity Timeline"
+                  >
+                    <ApperIcon name="Clock" className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -466,7 +671,7 @@ const getInitials = (name) => {
                 )}
               </div>
 
-              {contact.tags && contact.tags.length > 0 && (
+{contact.tags && contact.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {contact.tags.slice(0, 2).map((tag, index) => (
                     <Badge key={index} variant="default" size="sm">
@@ -480,6 +685,20 @@ const getInitials = (name) => {
                   )}
                 </div>
               )}
+
+              {/* Recent Activity Preview */}
+              {contactActivities[contact.Id] && contactActivities[contact.Id].length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-200">
+                  <p className="text-xs text-gray-500 mb-1">Recent Activity:</p>
+                  <p className="text-sm text-gray-700 truncate">
+                    {contactActivities[contact.Id][0].description}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1">
+                    {new Date(contactActivities[contact.Id][0].createdAt).toLocaleDateString()}
+                  </p>
+                </div>
+              )}
+              </div>
             </div>
           ))}
         </div>
@@ -495,6 +714,122 @@ const getInitials = (name) => {
         }}
         onSave={handleContactSave}
       />
+
+      {/* Activity Timeline Modal */}
+      {showTimeline.isOpen && showTimeline.contact && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">
+                Activity Timeline - {showTimeline.contact.name}
+              </h2>
+              <button
+                onClick={() => setShowTimeline({ isOpen: false, contact: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <ApperIcon name="X" className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 max-h-96 overflow-y-auto">
+              {contactActivities[showTimeline.contact.Id] && contactActivities[showTimeline.contact.Id].length > 0 ? (
+                <div className="space-y-4">
+                  {contactActivities[showTimeline.contact.Id].map((activity, index) => (
+                    <div key={activity.Id} className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <div className="w-8 h-8 rounded-full bg-primary-100 flex items-center justify-center">
+                          <ApperIcon 
+                            name={activity.type === 'deal' ? 'DollarSign' : activity.type === 'task' ? 'CheckSquare' : 'User'} 
+                            className="h-4 w-4 text-primary-600" 
+                          />
+                        </div>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm text-gray-900">
+                          <span className="font-medium">{activity.userName}</span> {activity.description}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(activity.createdAt).toLocaleString()}
+                        </p>
+                        {activity.priority && (
+                          <Badge 
+                            variant={activity.priority === 'high' ? 'destructive' : activity.priority === 'medium' ? 'default' : 'secondary'} 
+                            size="sm"
+                            className="mt-1"
+                          >
+                            {activity.priority}
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <ApperIcon name="Clock" className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+                  <p>No activities found for this contact</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Avatar Upload Modal */}
+      {showAvatarUpload.isOpen && showAvatarUpload.contact && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-md w-full">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">
+                Update Profile Picture
+              </h2>
+              <button
+                onClick={() => setShowAvatarUpload({ isOpen: false, contact: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <ApperIcon name="X" className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="text-center">
+                {showAvatarUpload.contact.avatar ? (
+                  <img 
+                    src={showAvatarUpload.contact.avatar} 
+                    alt={showAvatarUpload.contact.name}
+                    className="w-24 h-24 rounded-full object-cover mx-auto mb-4"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl font-semibold text-white">
+                      {getInitials(showAvatarUpload.contact.name)}
+                    </span>
+                  </div>
+                )}
+                
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleAvatarUpload(showAvatarUpload.contact.Id, e.target.files[0])}
+                  className="hidden"
+                  id="avatar-upload"
+                />
+                <label
+                  htmlFor="avatar-upload"
+                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer"
+                >
+                  <ApperIcon name="Upload" className="h-4 w-4 mr-2" />
+                  Choose New Photo
+                </label>
+                
+                <p className="text-xs text-gray-500 mt-2">
+                  Supported formats: JPG, PNG, GIF (max 5MB)
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
