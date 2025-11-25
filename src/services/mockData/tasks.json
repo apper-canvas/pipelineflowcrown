@@ -1,0 +1,75 @@
+[
+  {
+    "Id": 1,
+    "title": "Follow up with Sarah Johnson",
+    "description": "Send proposal follow-up email and schedule demo call",
+    "dueDate": "2024-01-25",
+    "priority": "high",
+    "status": "pending",
+    "assignedTo": "current-user",
+    "relatedTo": "1",
+    "relatedType": "contact",
+    "createdAt": "2024-01-20T10:30:00Z"
+  },
+  {
+    "Id": 2,
+    "title": "Prepare enterprise demo",
+    "description": "Create customized demo for MegaCorp Industries presentation",
+    "dueDate": "2024-01-23",
+    "priority": "urgent",
+    "status": "in-progress",
+    "assignedTo": "current-user",
+    "relatedTo": "1",
+    "relatedType": "deal",
+    "createdAt": "2024-01-18T14:15:00Z"
+  },
+  {
+    "Id": 3,
+    "title": "Send contract to Michael Chen",
+    "description": "Finalize and send signed contract for analytics platform",
+    "dueDate": "2024-01-26",
+    "priority": "medium",
+    "status": "pending",
+    "assignedTo": "current-user",
+    "relatedTo": "2",
+    "relatedType": "contact",
+    "createdAt": "2024-01-19T09:45:00Z"
+  },
+  {
+    "Id": 4,
+    "title": "Research competitor pricing",
+    "description": "Analyze competitor pricing for upcoming proposal",
+    "dueDate": "2024-01-28",
+    "priority": "low",
+    "status": "pending",
+    "assignedTo": "current-user",
+    "relatedTo": "",
+    "relatedType": "",
+    "createdAt": "2024-01-17T16:20:00Z"
+  },
+  {
+    "Id": 5,
+    "title": "Update CRM records",
+    "description": "Update contact information and deal stages in CRM",
+    "dueDate": "2024-01-22",
+    "priority": "medium",
+    "status": "completed",
+    "assignedTo": "current-user",
+    "relatedTo": "",
+    "relatedType": "",
+    "createdAt": "2024-01-15T11:00:00Z",
+    "completedAt": "2024-01-21T15:30:00Z"
+  },
+  {
+    "Id": 6,
+    "title": "Schedule quarterly review",
+    "description": "Book meeting room and send calendar invites for Q1 review",
+    "dueDate": "2024-01-30",
+    "priority": "medium",
+    "status": "pending",
+    "assignedTo": "current-user",
+    "relatedTo": "",
+    "relatedType": "",
+    "createdAt": "2024-01-16T13:25:00Z"
+  }
+]

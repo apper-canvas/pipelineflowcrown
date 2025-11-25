@@ -1,0 +1,456 @@
+import React, { useState, useEffect } from "react"
+import { toast } from "react-toastify"
+import Loading from "@/components/ui/Loading"
+import ErrorView from "@/components/ui/ErrorView"
+import Empty from "@/components/ui/Empty"
+import ApperIcon from "@/components/ApperIcon"
+import Badge from "@/components/atoms/Badge"
+import Button from "@/components/atoms/Button"
+import Input from "@/components/atoms/Input"
+import { leadService } from "@/services/api/leadService"
+import { format } from "date-fns"
+
+const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
+  const [formData, setFormData] = useState({
+    title: "",
+    company: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    value: "",
+    source: "website",
+    stage: "new",
+    notes: ""
+  })
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (lead) {
+      setFormData(lead)
+    } else {
+      setFormData({
+        title: "",
+        company: "",
+        contactName: "",
+        email: "",
+        phone: "",
+        value: "",
+        source: "website",
+        stage: "new",
+        notes: ""
+      })
+    }
+  }, [lead])
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    if (!formData.title.trim() || !formData.company.trim()) {
+      toast.error("Title and company are required")
+      return
+    }
+
+    setSaving(true)
+    try {
+      const savedLead = lead
+        ? await leadService.update(lead.Id, formData)
+        : await leadService.create(formData)
+      
+      onSave(savedLead)
+      toast.success(lead ? "Lead updated successfully" : "Lead created successfully")
+      onClose()
+    } catch (error) {
+      toast.error("Failed to save lead")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!isOpen) return null
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg animate-scale-in">
+        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+            {lead ? "Edit Lead" : "New Lead"}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+            <ApperIcon name="X" className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+          <Input
+            label="Lead Title"
+            value={formData.title}
+            onChange={(e) => setFormData({...formData, title: e.target.value})}
+            placeholder="New Business Opportunity"
+            required
+          />
+          
+          <Input
+            label="Company"
+            value={formData.company}
+            onChange={(e) => setFormData({...formData, company: e.target.value})}
+            placeholder="Acme Inc."
+            required
+          />
+          
+          <Input
+            label="Contact Name"
+            value={formData.contactName}
+            onChange={(e) => setFormData({...formData, contactName: e.target.value})}
+            placeholder="John Doe"
+          />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="john@acme.com"
+            />
+            
+            <Input
+              label="Phone"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Potential Value"
+              type="number"
+              value={formData.value}
+              onChange={(e) => setFormData({...formData, value: e.target.value})}
+              placeholder="10000"
+            />
+            
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Source
+              </label>
+              <select 
+                value={formData.source}
+                onChange={(e) => setFormData({...formData, source: e.target.value})}
+                className="input-field"
+              >
+                <option value="website">Website</option>
+                <option value="referral">Referral</option>
+                <option value="social-media">Social Media</option>
+                <option value="email">Email Campaign</option>
+                <option value="cold-call">Cold Call</option>
+                <option value="trade-show">Trade Show</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Stage
+            </label>
+            <select 
+              value={formData.stage}
+              onChange={(e) => setFormData({...formData, stage: e.target.value})}
+              className="input-field"
+            >
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="unqualified">Unqualified</option>
+            </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              placeholder="Additional information about this lead..."
+              rows={3}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
+            />
+          </div>
+
+          <div className="flex space-x-3 pt-4">
+            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+              Cancel
+            </Button>
+            <Button type="submit" disabled={saving} className="flex-1">
+              {saving ? "Saving..." : lead ? "Update" : "Create"}
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+const Leads = () => {
+  const [leads, setLeads] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+  const [selectedLead, setSelectedLead] = useState(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [filterStage, setFilterStage] = useState("all")
+
+  const stages = [
+    { id: "new", label: "New", color: "bg-blue-500" },
+    { id: "contacted", label: "Contacted", color: "bg-amber-500" },
+    { id: "qualified", label: "Qualified", color: "bg-green-500" },
+    { id: "unqualified", label: "Unqualified", color: "bg-red-500" }
+  ]
+
+  useEffect(() => {
+    loadLeads()
+  }, [])
+
+  const loadLeads = async () => {
+    try {
+      setLoading(true)
+      setError("")
+      const data = await leadService.getAll()
+      setLeads(data)
+    } catch (err) {
+      setError("Failed to load leads")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleLeadSave = (savedLead) => {
+    if (selectedLead) {
+      setLeads(leads.map(l => l.Id === savedLead.Id ? savedLead : l))
+    } else {
+      setLeads([savedLead, ...leads])
+    }
+  }
+
+  const handleStageChange = async (leadId, newStage) => {
+    try {
+      const lead = leads.find(l => l.Id === leadId)
+      const updatedLead = await leadService.update(leadId, { ...lead, stage: newStage })
+      setLeads(leads.map(l => l.Id === leadId ? updatedLead : l))
+      toast.success("Lead stage updated")
+    } catch (error) {
+      toast.error("Failed to update lead stage")
+    }
+  }
+
+  const handleDelete = async (leadId) => {
+    if (confirm("Are you sure you want to delete this lead?")) {
+      try {
+        await leadService.delete(leadId)
+        setLeads(leads.filter(l => l.Id !== leadId))
+        toast.success("Lead deleted successfully")
+      } catch (error) {
+        toast.error("Failed to delete lead")
+      }
+    }
+  }
+
+  const getStageColor = (stage) => {
+    const stageData = stages.find(s => s.id === stage)
+    return stageData ? stageData.color : "bg-slate-500"
+  }
+
+  const getStageLabel = (stage) => {
+    const stageData = stages.find(s => s.id === stage)
+    return stageData ? stageData.label : stage
+  }
+
+  const filteredLeads = filterStage === "all" ? leads : leads.filter(lead => lead.stage === filterStage)
+  const leadsByStage = stages.reduce((acc, stage) => {
+    acc[stage.id] = leads.filter(lead => lead.stage === stage.id)
+    return acc
+  }, {})
+
+  if (loading) return <Loading type="skeleton" />
+  if (error) return <ErrorView message={error} onRetry={loadLeads} />
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Leads</h1>
+          <p className="text-slate-600 dark:text-slate-400 mt-1">
+            Track and manage your sales leads through the qualification process.
+          </p>
+        </div>
+        <Button 
+          onClick={() => {
+            setSelectedLead(null)
+            setIsModalOpen(true)
+          }}
+          className="flex items-center space-x-2"
+        >
+          <ApperIcon name="Plus" className="h-4 w-4" />
+          <span>Add Lead</span>
+        </Button>
+      </div>
+
+      {/* Stage Filter */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setFilterStage("all")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+            filterStage === "all"
+              ? "bg-primary-600 text-white"
+              : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700"
+          }`}
+        >
+          All Leads ({leads.length})
+        </button>
+        {stages.map(stage => (
+          <button
+            key={stage.id}
+            onClick={() => setFilterStage(stage.id)}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 flex items-center space-x-2 ${
+              filterStage === stage.id
+                ? "bg-primary-600 text-white"
+                : "bg-white text-slate-700 border border-slate-300 hover:bg-slate-50 dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600 dark:hover:bg-slate-700"
+            }`}
+          >
+            <div className={`w-2 h-2 rounded-full ${stage.color}`}></div>
+            <span>{stage.label} ({leadsByStage[stage.id]?.length || 0})</span>
+          </button>
+        ))}
+      </div>
+
+      {/* Leads Display */}
+      {filteredLeads.length === 0 ? (
+        <Empty 
+          icon="UserPlus"
+          title="No leads found"
+          message={filterStage === "all" ? "Start capturing leads to grow your sales pipeline." : `No leads in ${getStageLabel(filterStage)} stage.`}
+          actionLabel="Add Lead"
+          onAction={() => {
+            setSelectedLead(null)
+            setIsModalOpen(true)
+          }}
+        />
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredLeads.map((lead) => (
+            <div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
+              <div className="flex items-start justify-between mb-4">
+                <div className="flex-1">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
+                    <Badge variant="default" size="sm">
+                      {getStageLabel(lead.stage)}
+                    </Badge>
+                  </div>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                    {lead.title}
+                  </h3>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm">
+                    {lead.company}
+                  </p>
+                </div>
+                
+                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={() => {
+                      setSelectedLead(lead)
+                      setIsModalOpen(true)
+                    }}
+                    className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                  >
+                    <ApperIcon name="Edit" className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(lead.Id)}
+                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                  >
+                    <ApperIcon name="Trash2" className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {lead.contactName && (
+                <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                  <ApperIcon name="User" className="h-4 w-4" />
+                  <span>{lead.contactName}</span>
+                </div>
+              )}
+
+              {lead.value && (
+                <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                  <ApperIcon name="DollarSign" className="h-4 w-4" />
+                  <span>${parseInt(lead.value).toLocaleString()}</span>
+                </div>
+              )}
+
+              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                  {lead.email && (
+                    <a 
+                      href={`mailto:${lead.email}`}
+                      className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                    >
+                      <ApperIcon name="Mail" className="h-4 w-4" />
+                      <span>Email</span>
+                    </a>
+                  )}
+                  {lead.phone && (
+                    <a 
+                      href={`tel:${lead.phone}`}
+                      className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                    >
+                      <ApperIcon name="Phone" className="h-4 w-4" />
+                      <span>Call</span>
+                    </a>
+                  )}
+                </div>
+
+                <select
+                  value={lead.stage}
+                  onChange={(e) => handleStageChange(lead.Id, e.target.value)}
+                  className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {stages.map(stage => (
+                    <option key={stage.id} value={stage.id}>
+                      {stage.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {lead.notes && (
+                <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-700 rounded text-sm text-slate-600 dark:text-slate-400">
+                  {lead.notes.length > 100 ? `${lead.notes.substring(0, 100)}...` : lead.notes}
+                </div>
+              )}
+
+              <div className="mt-3 text-xs text-slate-400">
+                Created {format(new Date(lead.createdAt), "MMM d, yyyy")}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Lead Modal */}
+      <LeadModal
+        isOpen={isModalOpen}
+        lead={selectedLead}
+        onClose={() => {
+          setIsModalOpen(false)
+          setSelectedLead(null)
+        }}
+        onSave={handleLeadSave}
+      />
+    </div>
+  )
+}
+
+export default Leads
