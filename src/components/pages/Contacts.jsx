@@ -4,8 +4,6 @@ import { toast } from "react-toastify";
 import { contactService } from "@/services/api/contactService";
 import { format } from "date-fns";
 import { activityService } from "@/services/api/activityService";
-import AssigneeSelector from "@/components/molecules/AssigneeSelector";
-import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -14,6 +12,8 @@ import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 import SearchBar from "@/components/molecules/SearchBar";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
 const ContactModal = ({ isOpen, contact, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -429,24 +429,25 @@ const sortedContacts = React.useMemo(() => {
   }, [filteredContacts, sortConfig]);
 
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
-        <div>
 if (loading) return <Loading type="skeleton" />;
   if (error) return <ErrorView message={error} onRetry={loadContacts} />;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
+        <div>
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Contacts</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
             Manage your customer relationships and contact information.
           </p>
-{/* Header */}
         </div>
+        <div className="flex items-center space-x-2">
           {/* View Toggle */}
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('cards')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-<div className="flex items-center space-x-2">
                 viewMode === 'cards' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -489,19 +490,19 @@ if (loading) return <Loading type="skeleton" />;
       </div>
 
       {/* Search and Filters */}
+      <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <div className="flex-1">
           <SearchBar
             placeholder="Search contacts by name, company, email, or phone..."
             onSearch={setSearchTerm}
           />
-<div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         </div>
+        <select
           className="input-field w-full sm:w-auto"
           value={assigneeFilter}
           onChange={(e) => setAssigneeFilter(e.target.value)}
         >
           <option value="">All Contacts</option>
-<select
           <option value="current-user">My Contacts</option>
           <option value="unassigned">Unassigned</option>
         </select>
@@ -556,9 +557,8 @@ if (loading) return <Loading type="skeleton" />;
         <Empty 
           icon="Users"
           title={searchTerm ? "No contacts found" : "No contacts yet"}
-          message={searchTerm ? "Try adjusting your search terms." : "Start building your customer database by adding your first contact."}
+message={searchTerm ? "Try adjusting your search terms." : "Start building your customer database by adding your first contact."}
           actionLabel="Add Contact"
-{/* Contacts Display */}
           onAction={() => {
             setSelectedContact(null)
             setIsModalOpen(true)
@@ -634,14 +634,14 @@ if (loading) return <Loading type="skeleton" />;
                         className="rounded border-gray-300 focus:ring-primary-500"
                       />
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
+<td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           {contact.avatar ? (
                             <img 
                               src={contact.avatar} 
                               alt={contact.name}
                               className="h-10 w-10 rounded-full object-cover"
-<div className="flex items-center">
                             />
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
@@ -729,15 +729,15 @@ if (loading) return <Loading type="skeleton" />;
             </table>
           </div>
         </div>
-      ) : (
+) : (
         /* Card View */
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedContacts.map((contact) => (
             <div 
               key={contact.Id} 
               className={`card hover:shadow-lg transition-all duration-200 group relative ${selectedContacts.includes(contact.Id) ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
             >
               {/* Selection Checkbox */}
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="absolute top-4 left-4 z-10">
                 <input
                   type="checkbox"
@@ -751,62 +751,65 @@ if (loading) return <Loading type="skeleton" />;
               <div 
                 className="cursor-pointer pl-8"
                 onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
+<div 
+                className="cursor-pointer pl-8"
+                onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
               >
-              <div className="flex items-start justify-between">
-                  <div className="relative">
-                    {contact.avatar ? (
-                      <img 
-                        src={contact.avatar} 
-                        alt={contact.name}
-                        className="h-12 w-12 rounded-full object-cover"
-<div className="flex items-center space-x-3 flex-1">
-                      />
-                    ) : (
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
-                        <span className="text-sm font-semibold text-white">
-                          {getInitials(contact.name)}
-                        </span>
-                      </div>
-                    )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setShowAvatarUpload({ isOpen: true, contact })
-                      }}
-                      className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                    >
-                      <ApperIcon name="Camera" className="h-3 w-3 text-gray-600" />
-                    </button>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                        {contact.name}
-                      </h3>
-                      {contact.assignedTo && (
-                        <AssigneeDisplay 
-                          assigneeId={contact.assignedTo} 
-                          size="sm" 
-                        />
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <div className="relative">
+                      {contact.avatar ? (
+                        <img 
+                          src={contact.avatar} 
+                          alt={contact.name}
+                          className="h-12 w-12 rounded-full object-cover"
+/>
+                      ) : (
+                        <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                          <span className="text-sm font-semibold text-white">
+                            {getInitials(contact.name)}
+                          </span>
+                        </div>
                       )}
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setShowAvatarUpload({ isOpen: true, contact })
+                        }}
+                        className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                      >
+                        <ApperIcon name="Camera" className="h-3 w-3 text-gray-600" />
+                      </button>
                     </div>
-                    {contact.position && contact.company && (
-                      <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
-                        {contact.position} at {contact.company}
-                      </p>
-                    )}
-                    {!expandedContact || expandedContact !== contact.Id ? (
-                      contact.email && (
-                        <p className="text-sm text-slate-500 dark:text-slate-500 truncate">
-                          {contact.email}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                          {contact.name}
+                        </h3>
+                        {contact.assignedTo && (
+                          <AssigneeDisplay 
+                            assigneeId={contact.assignedTo} 
+                            size="sm" 
+                          />
+                        )}
+                      </div>
+                      {contact.position && contact.company && (
+                        <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
+                          {contact.position} at {contact.company}
                         </p>
-                      )
-                    ) : null}
+                      )}
+                      {!expandedContact || expandedContact !== contact.Id ? (
+                        contact.email && (
+                          <p className="text-sm text-slate-500 dark:text-slate-500 truncate">
+                            {contact.email}
+                          </p>
+                        )
+                      ) : null}
+                    </div>
                   </div>
-                </div>
-                
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button
+                  
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
                     onClick={(e) => {
                       e.stopPropagation()
                       setDetailModal({ isOpen: true, contact })
@@ -846,11 +849,11 @@ if (loading) return <Loading type="skeleton" />;
                     title="Delete contact"
                   >
                     <ApperIcon name="Trash2" className="h-4 w-4" />
-                  </button>
+</button>
+                  </div>
                 </div>
-              </div>
 
-              {/* Expanded Details */}
+                {/* Expanded Details */}
               {expandedContact === contact.Id && (
                 <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700 space-y-3 animate-slide-up">
                   {contact.email && (
@@ -979,10 +982,9 @@ if (loading) return <Loading type="skeleton" />;
       <ContactModal
         isOpen={isModalOpen}
         contact={selectedContact}
-        onClose={() => {
+onClose={() => {
           setIsModalOpen(false)
           setSelectedContact(null)
-{/* Contact Modal */}
         }}
         onSave={handleContactSave}
       />
@@ -1345,15 +1347,16 @@ if (loading) return <Loading type="skeleton" />;
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+{/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={deleteModal.isOpen}
-);
-};
         contactName={deleteModal.contact?.name}
         onClose={() => setDeleteModal({ isOpen: false, contact: null })}
-export default Contacts;
         onConfirm={confirmDelete}
         isDeleting={isDeleting}
       />
     </div>
+  );
+};
+
+export default Contacts;

@@ -204,7 +204,7 @@ const formatActivityTime = (dateString) => {
     }
   }
 
-  if (loading) return <Loading />
+if (loading) return <Loading />
   if (error) return <ErrorView message={error} onRetry={loadData} />
 
   return (
@@ -228,7 +228,7 @@ const formatActivityTime = (dateString) => {
       </div>
 
       {/* Filters */}
-<div className="card">
+      <div className="card">
         <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <Input
@@ -301,7 +301,7 @@ const formatActivityTime = (dateString) => {
             <div key={activity.Id} className="card hover:shadow-lg transition-all duration-200 group">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-<div className={`w-10 h-10 rounded-full ${getActivityColorClasses(activity.type)} flex items-center justify-center`}>
+                  <div className={`w-10 h-10 rounded-full ${getActivityColorClasses(activity.type)} flex items-center justify-center`}>
                     <ApperIcon
                       name={getActivityIcon(activity.type)}
                       className="h-5 w-5 text-primary-600"
@@ -311,7 +311,7 @@ const formatActivityTime = (dateString) => {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
-<div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-2">
                       <div className="flex items-center space-x-2">
                         <Badge variant="default" size="sm">
                           <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getActivityBadgeColor(activity.type)}`}>
@@ -352,31 +352,30 @@ const formatActivityTime = (dateString) => {
                     {activity.description}
                   </h3>
 
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
-<div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4 text-xs">
-                        <div className="flex items-center space-x-1">
-                          <ApperIcon name="User" className="h-4 w-4" />
-                          <span>{getContactName(activity.contactId)}</span>
-                        </div>
-                        {activity.dealId && (
-                          <div className="flex items-center space-x-1">
-                            <ApperIcon name="DollarSign" className="h-4 w-4" />
-                            <span>{getDealTitle(activity.dealId)}</span>
-                          </div>
-                        )}
-                        <div className="flex items-center space-x-1">
-                          <ApperIcon name="Clock" className="h-4 w-4" />
-                          <span>{formatActivityTime(activity.createdAt)}</span>
-                        </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-4 text-xs">
+                      <div className="flex items-center space-x-1">
+                        <ApperIcon name="User" className="h-4 w-4" />
+                        <span>{getContactName(activity.contactId)}</span>
                       </div>
-                      {activity.assignedTo && (
-                        <AssigneeDisplay 
-                          assigneeId={activity.assignedTo} 
-                          size="sm" 
-                        />
+                      {activity.dealId && (
+                        <div className="flex items-center space-x-1">
+                          <ApperIcon name="DollarSign" className="h-4 w-4" />
+                          <span>{getDealTitle(activity.dealId)}</span>
+                        </div>
                       )}
+                      <div className="flex items-center space-x-1">
+                        <ApperIcon name="Clock" className="h-4 w-4" />
+                        <span>{formatActivityTime(activity.createdAt)}</span>
+                      </div>
                     </div>
+                    {activity.assignedTo && (
+                      <AssigneeDisplay 
+                        assigneeId={activity.assignedTo} 
+                        size="sm" 
+                      />
+                    )}
+                  </div>
 
                   {/* Type-specific details */}
                   {activity.type === 'call' && activity.duration && (
@@ -385,7 +384,7 @@ const formatActivityTime = (dateString) => {
                     </div>
                   )}
                   
-{activity.type === 'meeting' && activity.scheduledDate && (
+                  {activity.type === 'meeting' && activity.scheduledDate && (
                     <div className="text-sm text-purple-600 mb-1 flex items-center">
                       <ApperIcon name="Clock" className="w-4 h-4 mr-1" />
                       {formatScheduledTime(activity.scheduledDate, activity.scheduledTime)}
@@ -437,7 +436,7 @@ const formatActivityTime = (dateString) => {
       )}
 
       {/* Activity Modal */}
-{showActivityModal && (
+      {showActivityModal && (
         <ActivityModal
           activity={editingActivity}
           contacts={contacts}
@@ -451,7 +450,7 @@ const formatActivityTime = (dateString) => {
         />
       )}
     </div>
-)
+  )
 
   async function handleSaveActivity(activityData) {
     try {
