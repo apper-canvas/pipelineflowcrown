@@ -21,7 +21,9 @@ const [formData, setFormData] = useState({
     category: "follow-up",
     assignedTo: "current-user",
     relatedTo: "",
-    relatedType: "contact"
+    relatedType: "contact",
+    recurrenceType: "none",
+    recurrenceInterval: 1
   })
   const [contacts, setContacts] = useState([])
   const [saving, setSaving] = useState(false)
@@ -39,7 +41,7 @@ if (task) {
         dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
       })
     } else {
-      setFormData({
+setFormData({
         title: "",
         description: "",
         dueDate: "",
@@ -48,7 +50,9 @@ if (task) {
         category: "follow-up",
         assignedTo: "current-user",
         relatedTo: "",
-        relatedType: "contact"
+        relatedType: "contact",
+        recurrenceType: "none",
+        recurrenceInterval: 1
       })
     }
   }, [task])
@@ -180,6 +184,60 @@ if (task) {
                 <option value="other">Other</option>
               </select>
             </div>
+          </div>
+
+          {/* Recurring Task Section */}
+          <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-4">
+            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Recurring Options</h3>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Recurrence
+                </label>
+                <select 
+                  value={formData.recurrenceType}
+                  onChange={(e) => setFormData({...formData, recurrenceType: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="none">No Recurrence</option>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
+              </div>
+
+              {formData.recurrenceType !== 'none' && (
+                <div className="space-y-1">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                    Every
+                  </label>
+                  <div className="flex items-center space-x-2">
+                    <select 
+                      value={formData.recurrenceInterval}
+                      onChange={(e) => setFormData({...formData, recurrenceInterval: parseInt(e.target.value)})}
+                      className="input-field flex-1"
+                    >
+                      {[1,2,3,4,5,6,7,8,9,10].map(num => (
+                        <option key={num} value={num}>{num}</option>
+                      ))}
+                    </select>
+                    <span className="text-sm text-slate-600 dark:text-slate-400">
+                      {formData.recurrenceType === 'daily' ? 'day(s)' : 
+                       formData.recurrenceType === 'weekly' ? 'week(s)' : 
+                       formData.recurrenceType === 'monthly' ? 'month(s)' : ''}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {formData.recurrenceType !== 'none' && (
+              <div className="text-xs text-slate-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <ApperIcon name="Info" className="h-4 w-4 inline mr-1" />
+                This task will repeat every {formData.recurrenceInterval} {formData.recurrenceType === 'daily' ? 'day' : formData.recurrenceType === 'weekly' ? 'week' : 'month'}{formData.recurrenceInterval > 1 ? 's' : ''} starting from the due date.
+              </div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
