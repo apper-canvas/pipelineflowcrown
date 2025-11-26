@@ -457,6 +457,9 @@ const organizedComments = organizeComments(filteredAndSortedComments)
             placeholder={replyingTo ? `Replying to ${replyingTo.authorName}...` : "Write a comment... (Use #hashtags to set topics)"}
             teamMembers={teamMembers}
             minHeight="80px"
+            conversationHistory={comments}
+            taskContext={{ title: `Task ${taskId}` }}
+            enableAISuggestions={true}
           />
           <div className="flex justify-between items-center">
             <div className="text-xs text-slate-500">
