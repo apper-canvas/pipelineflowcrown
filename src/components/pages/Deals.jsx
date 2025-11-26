@@ -306,7 +306,7 @@ const Deals = () => {
     return acc
   }, {})
 
-  const totalPipelineValue = deals.reduce((sum, deal) => sum + (parseFloat(deal.amount) || 0), 0)
+const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.amount) || 0) * ((deal.probability || 0) / 100)), 0)
 
   if (loading) return <Loading type="skeleton" />
   if (error) return <ErrorView message={error} onRetry={loadDeals} />
@@ -320,8 +320,8 @@ const Deals = () => {
           <p className="text-slate-600 dark:text-slate-400 mt-1">
             Manage your sales pipeline and track deal progress.
           </p>
-          <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
-            Total Pipeline Value: <span className="font-semibold text-primary-600">${totalPipelineValue.toLocaleString()}</span>
+<p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
+            Weighted Pipeline Value: <span className="font-semibold text-primary-600">${totalPipelineValue.toLocaleString()}</span>
           </p>
         </div>
         <Button 
