@@ -19,34 +19,88 @@ export const dealService = {
     return { ...deal }
   },
 
-  async create(dealData) {
+async create(dealData) {
     await delay(350)
+    const now = new Date().toISOString()
     const newDeal = {
       ...dealData,
       Id: Math.max(...deals.map(d => d.Id)) + 1,
       amount: parseFloat(dealData.amount) || 0,
       probability: parseInt(dealData.probability) || 25,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+      createdAt: now,
+      updatedAt: now,
+      stageChangedAt: dealData.stageChangedAt || now,
+      stageHistory: [{
+        stage: dealData.stage || 'new',
+        enteredAt: now,
+        duration: 0
+      }]
     }
     deals = [newDeal, ...deals]
     return { ...newDeal }
   },
 
-  async update(id, dealData) {
+async update(id, dealData) {
     await delay(350)
     const index = deals.findIndex(d => d.Id === parseInt(id))
     if (index === -1) {
       throw new Error("Deal not found")
     }
     
+    const now = new Date().toISOString()
+    const currentDeal = deals[index]
+    
     const updatedDeal = {
-      ...deals[index],
+      ...currentDeal,
       ...dealData,
       Id: parseInt(id),
-      amount: parseFloat(dealData.amount) || deals[index].amount,
-      probability: parseInt(dealData.probability) || deals[index].probability,
-      updatedAt: new Date().toISOString()
+      amount: parseFloat(dealData.amount) || currentDeal.amount,
+      probability: parseInt(dealData.probability) || currentDeal.probability,
+      updatedAt: now
+    }
+    
+    deals[index] = updatedDeal
+    return { ...updatedDeal }
+  },
+
+  async updateStage(id, newStage) {
+    await delay(350)
+    const index = deals.findIndex(d => d.Id === parseInt(id))
+    if (index === -1) {
+      throw new Error("Deal not found")
+    }
+    
+    const now = new Date().toISOString()
+    const currentDeal = deals[index]
+    
+    // Calculate duration in current stage
+    const currentStageDuration = currentDeal.stageChangedAt 
+      ? new Date(now) - new Date(currentDeal.stageChangedAt)
+      : 0
+    
+    // Update stage history
+    const updatedHistory = [...(currentDeal.stageHistory || [])]
+    
+    // Update the last entry with exit time and duration
+    if (updatedHistory.length > 0) {
+      const lastEntry = updatedHistory[updatedHistory.length - 1]
+      lastEntry.exitedAt = now
+      lastEntry.duration = currentStageDuration
+    }
+    
+    // Add new stage entry
+    updatedHistory.push({
+      stage: newStage,
+      enteredAt: now,
+      duration: 0
+    })
+    
+    const updatedDeal = {
+      ...currentDeal,
+      stage: newStage,
+      stageChangedAt: now,
+      stageHistory: updatedHistory,
+      updatedAt: now
     }
     
     deals[index] = updatedDeal
@@ -59,15 +113,41 @@ async delete(id) {
     return true
   },
 
-  async bulkUpdateStage(dealIds, stage) {
+async bulkUpdateStage(dealIds, stage) {
     await delay(400)
+    const now = new Date().toISOString()
+    
     dealIds.forEach(id => {
       const index = deals.findIndex(d => d.Id === parseInt(id))
       if (index !== -1) {
+        const currentDeal = deals[index]
+        
+        // Calculate duration in current stage
+        const currentStageDuration = currentDeal.stageChangedAt 
+          ? new Date(now) - new Date(currentDeal.stageChangedAt)
+          : 0
+        
+        // Update stage history
+        const updatedHistory = [...(currentDeal.stageHistory || [])]
+        
+        if (updatedHistory.length > 0) {
+          const lastEntry = updatedHistory[updatedHistory.length - 1]
+          lastEntry.exitedAt = now
+          lastEntry.duration = currentStageDuration
+        }
+        
+        updatedHistory.push({
+          stage: stage,
+          enteredAt: now,
+          duration: 0
+        })
+        
         deals[index] = {
-          ...deals[index],
+          ...currentDeal,
           stage,
-          updatedAt: new Date().toISOString()
+          stageChangedAt: now,
+          stageHistory: updatedHistory,
+          updatedAt: now
         }
       }
     })
@@ -77,6 +157,67 @@ async delete(id) {
   async getByStage(stage) {
     await delay(300)
     return deals.filter(d => d.stage === stage)
+},
+
+  async getStageDurationAnalytics() {
+    await delay(200)
+    
+    // Calculate average duration per stage from completed transitions
+    const stageAnalytics = {}
+    const currentStageData = {}
+    
+    deals.forEach(deal => {
+      if (deal.stageHistory) {
+        deal.stageHistory.forEach(entry => {
+          if (!stageAnalytics[entry.stage]) {
+            stageAnalytics[entry.stage] = {
+              totalDuration: 0,
+              completedTransitions: 0,
+              averageDuration: 0
+            }
+          }
+          
+          if (entry.duration > 0) {
+            stageAnalytics[entry.stage].totalDuration += entry.duration
+            stageAnalytics[entry.stage].completedTransitions += 1
+          }
+        })
+      }
+      
+      // Track current stage durations
+      if (deal.stageChangedAt) {
+        const currentDuration = new Date() - new Date(deal.stageChangedAt)
+        if (!currentStageData[deal.stage]) {
+          currentStageData[deal.stage] = {
+            totalCurrentDuration: 0,
+            activeDeals: 0,
+            averageCurrentDuration: 0
+          }
+        }
+        currentStageData[deal.stage].totalCurrentDuration += currentDuration
+        currentStageData[deal.stage].activeDeals += 1
+      }
+    })
+    
+    // Calculate averages
+    Object.keys(stageAnalytics).forEach(stage => {
+      const data = stageAnalytics[stage]
+      if (data.completedTransitions > 0) {
+        data.averageDuration = data.totalDuration / data.completedTransitions
+      }
+    })
+    
+    Object.keys(currentStageData).forEach(stage => {
+      const data = currentStageData[stage]
+      if (data.activeDeals > 0) {
+        data.averageCurrentDuration = data.totalCurrentDuration / data.activeDeals
+      }
+    })
+    
+    return {
+      historicalStageMetrics: stageAnalytics,
+      currentStageMetrics: currentStageData
+    }
   },
 
   async getPipelineMetrics() {
@@ -99,5 +240,24 @@ async delete(id) {
       totalDeals: deals.length,
       stageDistribution
     }
+  },
+
+  async getDealById(id) {
+    await delay(150)
+    const deal = deals.find(d => d.Id === parseInt(id))
+    if (!deal) {
+      throw new Error("Deal not found")
+    }
+    return { ...deal }
+  },
+
+  async getStageTransitionHistory(id) {
+    await delay(200)
+    const deal = deals.find(d => d.Id === parseInt(id))
+    if (!deal) {
+      throw new Error("Deal not found")
+    }
+    
+    return deal.stageHistory || []
   }
 }

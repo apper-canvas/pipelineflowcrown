@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from "react"
-import { toast } from "react-toastify"
-import Loading from "@/components/ui/Loading"
-import ErrorView from "@/components/ui/ErrorView"
-import Empty from "@/components/ui/Empty"
-import ApperIcon from "@/components/ApperIcon"
-import Badge from "@/components/atoms/Badge"
-import Button from "@/components/atoms/Button"
-import Input from "@/components/atoms/Input"
-import { dealService } from "@/services/api/dealService"
-import { contactService } from "@/services/api/contactService"
-import { format } from "date-fns"
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { dealService } from "@/services/api/dealService";
+import { contactService } from "@/services/api/contactService";
+import { format } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
+import Loading from "@/components/ui/Loading";
+import ErrorView from "@/components/ui/ErrorView";
+import Empty from "@/components/ui/Empty";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Badge from "@/components/atoms/Badge";
 
 const DealModal = ({ isOpen, deal, onClose, onSave }) => {
   const [formData, setFormData] = useState({
@@ -19,7 +19,8 @@ const DealModal = ({ isOpen, deal, onClose, onSave }) => {
     probability: 25,
     closeDate: "",
     contactId: "",
-    notes: ""
+    notes: "",
+    stageChangedAt: new Date().toISOString()
   })
   const [contacts, setContacts] = useState([])
   const [saving, setSaving] = useState(false)
@@ -31,7 +32,7 @@ const DealModal = ({ isOpen, deal, onClose, onSave }) => {
   }, [isOpen])
 
   useEffect(() => {
-    if (deal) {
+if (deal) {
       setFormData({
         ...deal,
         closeDate: deal.closeDate ? format(new Date(deal.closeDate), "yyyy-MM-dd") : ""
@@ -44,7 +45,8 @@ const DealModal = ({ isOpen, deal, onClose, onSave }) => {
         probability: 25,
         closeDate: "",
         contactId: "",
-        notes: ""
+        notes: "",
+        stageChangedAt: new Date().toISOString()
       })
     }
   }, [deal])
@@ -255,15 +257,58 @@ const Deals = () => {
     }
   }
 
-  const handleStageChange = async (dealId, newStage) => {
+const handleStageChange = async (dealId, newStage) => {
     try {
       const deal = deals.find(d => d.Id === dealId)
-      const updatedDeal = await dealService.update(dealId, { ...deal, stage: newStage })
+      const updatedDeal = await dealService.updateStage(dealId, newStage)
       setDeals(deals.map(d => d.Id === dealId ? updatedDeal : d))
       toast.success("Deal stage updated")
     } catch (error) {
       toast.error("Failed to update deal stage")
     }
+  }
+
+  const formatDuration = (milliseconds) => {
+    const days = Math.floor(milliseconds / (1000 * 60 * 60 * 24))
+    const hours = Math.floor((milliseconds % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
+    
+    if (days > 0) {
+      return `${days}d ${hours}h`
+    } else if (hours > 0) {
+      return `${hours}h`
+    } else {
+      const minutes = Math.floor((milliseconds % (1000 * 60 * 60)) / (1000 * 60))
+      return `${minutes}m`
+    }
+  }
+
+  const getStageDurationColor = (duration, stage) => {
+    const thresholds = {
+      new: 7, // 7 days
+      qualified: 14, // 14 days
+      proposal: 10, // 10 days
+      negotiation: 21, // 21 days
+      won: 0,
+      lost: 0
+    }
+    
+    const daysDuration = duration / (1000 * 60 * 60 * 24)
+    const threshold = thresholds[stage] || 14
+    
+    if (stage === 'won' || stage === 'lost') return 'text-slate-600'
+    if (daysDuration <= threshold * 0.5) return 'text-green-600'
+    if (daysDuration <= threshold) return 'text-yellow-600'
+    return 'text-red-600'
+  }
+
+  const getCurrentStageDuration = (deal) => {
+    if (!deal.stageChangedAt) return 0
+    return new Date() - new Date(deal.stageChangedAt)
+  }
+
+  const getTotalDealAge = (deal) => {
+    if (!deal.createdAt) return 0
+    return new Date() - new Date(deal.createdAt)
   }
 
   const handleDelete = async (dealId) => {
@@ -378,7 +423,11 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredDeals.map((deal) => (
+{filteredDeals.map((deal) => {
+            const currentStageDuration = getCurrentStageDuration(deal)
+            const totalDealAge = getTotalDealAge(deal)
+            
+            return (
             <div key={deal.Id} className="card hover:shadow-lg transition-all duration-200 group">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -387,6 +436,18 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
                     <Badge variant="default" size="sm">
                       {getStageLabel(deal.stage)}
                     </Badge>
+                    <div className="flex items-center space-x-3 text-sm">
+                      <div className="flex items-center space-x-1">
+                        <ApperIcon name="Clock" size={14} className={getStageDurationColor(currentStageDuration, deal.stage)} />
+                        <span className={getStageDurationColor(currentStageDuration, deal.stage)}>
+                          {formatDuration(currentStageDuration)}
+                        </span>
+                      </div>
+                      <div className="flex items-center space-x-1 text-slate-500">
+                        <ApperIcon name="Calendar" size={14} />
+                        <span>{formatDuration(totalDealAge)} total</span>
+                      </div>
+</div>
                   </div>
                   <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
                     {deal.title}
@@ -395,7 +456,6 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
                     ${parseInt(deal.amount).toLocaleString()}
                   </p>
                 </div>
-                
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
                   <button
                     onClick={() => {
