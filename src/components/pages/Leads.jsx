@@ -194,16 +194,17 @@ if (!formData.title.trim() || !formData.company.trim()) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                 Stage
               </label>
-              <select
+<select
                 value={formData.stage}
                 onChange={(e) => setFormData({...formData, stage: e.target.value})}
                 className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
               >
-                {stages.map(stage => (
-                  <option key={stage.id} value={stage.id}>
-                    {stage.label}
-                  </option>
-                ))}
+                <option value="new">New</option>
+                <option value="contacted">Contacted</option>
+                <option value="qualified">Qualified</option>
+                <option value="nurturing">Nurturing</option>
+                <option value="converted">Converted</option>
+                <option value="lost">Lost</option>
               </select>
             </div>
           </div>
@@ -219,116 +220,7 @@ if (!formData.title.trim() || !formData.company.trim()) {
               rows="3"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none bg-white dark:bg-slate-800 dark:border-slate-600"
             />
-          </div>
-          
-          <Input
-            label="Company"
-            value={formData.company}
-            onChange={(e) => setFormData({...formData, company: e.target.value})}
-            placeholder="Acme Inc."
-            required
-          />
-          
-          <Input
-            label="Contact Name"
-            value={formData.contactName}
-            onChange={(e) => setFormData({...formData, contactName: e.target.value})}
-            placeholder="John Doe"
-          />
-          
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => setFormData({...formData, email: e.target.value})}
-              placeholder="john@acme.com"
-            />
-            
-            <Input
-              label="Phone"
-              value={formData.phone}
-              onChange={(e) => setFormData({...formData, phone: e.target.value})}
-              placeholder="+1 (555) 123-4567"
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <Input
-              label="Potential Value"
-              type="number"
-              value={formData.value}
-              onChange={(e) => setFormData({...formData, value: e.target.value})}
-              placeholder="10000"
-            />
-            
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Lead Source
-              </label>
-              <select 
-                value={formData.source}
-                onChange={(e) => setFormData({...formData, source: e.target.value})}
-                className="input-field"
-              >
-                <option value="website">Website</option>
-                <option value="linkedin">LinkedIn</option>
-                <option value="referral">Referral</option>
-                <option value="cold-call">Cold Call</option>
-                <option value="event">Event</option>
-                <option value="social-media">Social Media</option>
-                <option value="email-campaign">Email Campaign</option>
-                <option value="trade-show">Trade Show</option>
-                <option value="partner">Partner</option>
-                <option value="advertising">Advertising</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Pipeline Stage
-            </label>
-            <select 
-              value={formData.stage}
-              onChange={(e) => setFormData({...formData, stage: e.target.value})}
-              className="input-field"
-            >
-              <option value="new">New</option>
-              <option value="contacted">Contacted</option>
-              <option value="qualified">Qualified</option>
-              <option value="nurturing">Nurturing</option>
-              <option value="converted">Converted</option>
-              <option value="lost">Lost</option>
-            </select>
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="Additional notes about this lead..."
-              rows="3"
-              className="input-field resize-none"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Notes
-            </label>
-            <textarea
-              value={formData.notes}
-              onChange={(e) => setFormData({...formData, notes: e.target.value})}
-              placeholder="Additional information about this lead..."
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
-            />
-          </div>
+</div>
 
           <div className="flex space-x-3 pt-4">
             <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
