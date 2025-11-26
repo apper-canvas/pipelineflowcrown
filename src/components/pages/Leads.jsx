@@ -24,9 +24,19 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
   })
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+useEffect(() => {
     if (lead) {
-      setFormData(lead)
+      setFormData({
+        title: lead.title || "",
+        company: lead.company || "",
+        contactName: lead.contactName || "",
+        email: lead.email || "",
+        phone: lead.phone || "",
+        value: lead.value || "",
+        source: lead.source || "website",
+        stage: lead.stage || "new",
+        notes: lead.notes || ""
+      })
     } else {
       setFormData({
         title: "",
@@ -44,8 +54,13 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!formData.title.trim() || !formData.company.trim()) {
+if (!formData.title.trim() || !formData.company.trim()) {
       toast.error("Title and company are required")
+      return
+    }
+    
+    if (formData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      toast.error("Please enter a valid email address")
       return
     }
 
@@ -79,7 +94,7 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+<form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <Input
             label="Lead Title"
             value={formData.title}
@@ -131,7 +146,7 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
             
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Source
+                Lead Source
               </label>
               <select 
                 value={formData.source}
@@ -139,11 +154,15 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
                 className="input-field"
               >
                 <option value="website">Website</option>
+                <option value="linkedin">LinkedIn</option>
                 <option value="referral">Referral</option>
-                <option value="social-media">Social Media</option>
-                <option value="email">Email Campaign</option>
                 <option value="cold-call">Cold Call</option>
+                <option value="event">Event</option>
+                <option value="social-media">Social Media</option>
+                <option value="email-campaign">Email Campaign</option>
                 <option value="trade-show">Trade Show</option>
+                <option value="partner">Partner</option>
+                <option value="advertising">Advertising</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -151,7 +170,7 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
 
           <div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Stage
+              Pipeline Stage
             </label>
             <select 
               value={formData.stage}
@@ -161,8 +180,23 @@ const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
               <option value="new">New</option>
               <option value="contacted">Contacted</option>
               <option value="qualified">Qualified</option>
-              <option value="unqualified">Unqualified</option>
+              <option value="nurturing">Nurturing</option>
+              <option value="converted">Converted</option>
+              <option value="lost">Lost</option>
             </select>
+          </div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              placeholder="Additional notes about this lead..."
+              rows="3"
+              className="input-field resize-none"
+            />
           </div>
 
           <div className="space-y-1">
@@ -200,11 +234,13 @@ const Leads = () => {
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filterStage, setFilterStage] = useState("all")
 
-  const stages = [
+const stages = [
     { id: "new", label: "New", color: "bg-blue-500" },
     { id: "contacted", label: "Contacted", color: "bg-amber-500" },
     { id: "qualified", label: "Qualified", color: "bg-green-500" },
-    { id: "unqualified", label: "Unqualified", color: "bg-red-500" }
+    { id: "nurturing", label: "Nurturing", color: "bg-purple-500" },
+    { id: "converted", label: "Converted", color: "bg-emerald-600" },
+    { id: "lost", label: "Lost", color: "bg-red-500" }
   ]
 
   useEffect(() => {
@@ -232,12 +268,21 @@ const Leads = () => {
     }
   }
 
-  const handleStageChange = async (leadId, newStage) => {
+const handleStageChange = async (leadId, newStage) => {
     try {
       const lead = leads.find(l => l.Id === leadId)
-      const updatedLead = await leadService.update(leadId, { ...lead, stage: newStage })
+      if (!lead) return
+      
+      const updatedLead = await leadService.update(leadId, { stage: newStage })
       setLeads(leads.map(l => l.Id === leadId ? updatedLead : l))
-      toast.success("Lead stage updated")
+      
+      const stageLabel = getStageLabel(newStage)
+      toast.success(`Lead moved to ${stageLabel}`)
+      
+      // Handle conversion logic
+      if (newStage === 'converted') {
+        toast.info("Lead converted! Create customer record for full conversion.")
+      }
     } catch (error) {
       toast.error("Failed to update lead stage")
     }
@@ -257,7 +302,7 @@ const Leads = () => {
 
   const getStageColor = (stage) => {
     const stageData = stages.find(s => s.id === stage)
-    return stageData ? stageData.color : "bg-slate-500"
+return stageData ? stageData.color : "bg-slate-500"
   }
 
   const getStageLabel = (stage) => {
@@ -265,7 +310,24 @@ const Leads = () => {
     return stageData ? stageData.label : stage
   }
 
-  const filteredLeads = filterStage === "all" ? leads : leads.filter(lead => lead.stage === filterStage)
+  const getSourceLabel = (source) => {
+    const sourceMap = {
+      'website': 'Website',
+      'linkedin': 'LinkedIn',
+      'referral': 'Referral',
+      'cold-call': 'Cold Call',
+      'event': 'Event',
+      'social-media': 'Social Media',
+      'email-campaign': 'Email Campaign',
+      'trade-show': 'Trade Show',
+      'partner': 'Partner',
+      'advertising': 'Advertising',
+      'other': 'Other'
+    }
+    return sourceMap[source] || source
+  }
+
+const filteredLeads = filterStage === "all" ? leads : leads.filter(lead => lead.stage === filterStage)
   const leadsByStage = stages.reduce((acc, stage) => {
     acc[stage.id] = leads.filter(lead => lead.stage === stage.id)
     return acc
@@ -273,15 +335,14 @@ const Leads = () => {
 
   if (loading) return <Loading type="skeleton" />
   if (error) return <ErrorView message={error} onRetry={loadLeads} />
-
-  return (
+return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Leads</h1>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Lead Management</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
-            Track and manage your sales leads through the qualification process.
+            Track and nurture leads through your sales pipeline from initial contact to conversion.
           </p>
         </div>
         <Button 
@@ -294,6 +355,21 @@ const Leads = () => {
           <ApperIcon name="Plus" className="h-4 w-4" />
           <span>Add Lead</span>
         </Button>
+      </div>
+
+{/* Pipeline Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {stages.map(stage => (
+          <div key={stage.id} className="card text-center">
+            <div className={`w-4 h-4 rounded-full ${stage.color} mx-auto mb-2`}></div>
+            <div className="font-medium text-sm text-slate-900 dark:text-slate-100">
+              {stage.label}
+            </div>
+            <div className="text-2xl font-bold text-slate-900 dark:text-slate-100 mt-1">
+              {leadsByStage[stage.id]?.length || 0}
+            </div>
+          </div>
+        ))}
       </div>
 
       {/* Stage Filter */}
@@ -324,7 +400,7 @@ const Leads = () => {
         ))}
       </div>
 
-      {/* Leads Display */}
+{/* Leads Display */}
       {filteredLeads.length === 0 ? (
         <Empty 
           icon="UserPlus"
@@ -347,6 +423,11 @@ const Leads = () => {
                     <Badge variant="default" size="sm">
                       {getStageLabel(lead.stage)}
                     </Badge>
+                    {lead.source && (
+                      <Badge variant="outline" size="sm" className="text-xs">
+                        {getSourceLabel(lead.source)}
+                      </Badge>
+                    )}
                   </div>
                   <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
                     {lead.title}
@@ -363,12 +444,14 @@ const Leads = () => {
                       setIsModalOpen(true)
                     }}
                     className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                    title="Edit lead"
                   >
                     <ApperIcon name="Edit" className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(lead.Id)}
                     className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                    title="Delete lead"
                   >
                     <ApperIcon name="Trash2" className="h-4 w-4" />
                   </button>
@@ -385,7 +468,7 @@ const Leads = () => {
               {lead.value && (
                 <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
                   <ApperIcon name="DollarSign" className="h-4 w-4" />
-                  <span>${parseInt(lead.value).toLocaleString()}</span>
+                  <span>${parseFloat(lead.value).toLocaleString()}</span>
                 </div>
               )}
 
@@ -395,6 +478,7 @@ const Leads = () => {
                     <a 
                       href={`mailto:${lead.email}`}
                       className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                      title={`Email ${lead.email}`}
                     >
                       <ApperIcon name="Mail" className="h-4 w-4" />
                       <span>Email</span>
@@ -404,6 +488,7 @@ const Leads = () => {
                     <a 
                       href={`tel:${lead.phone}`}
                       className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                      title={`Call ${lead.phone}`}
                     >
                       <ApperIcon name="Phone" className="h-4 w-4" />
                       <span>Call</span>
@@ -414,8 +499,9 @@ const Leads = () => {
                 <select
                   value={lead.stage}
                   onChange={(e) => handleStageChange(lead.Id, e.target.value)}
-                  className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
                   onClick={(e) => e.stopPropagation()}
+                  title="Change stage"
                 >
                   {stages.map(stage => (
                     <option key={stage.id} value={stage.id}>
@@ -440,7 +526,7 @@ const Leads = () => {
       )}
 
       {/* Lead Modal */}
-      <LeadModal
+<LeadModal
         isOpen={isModalOpen}
         lead={selectedLead}
         onClose={() => {
