@@ -271,7 +271,7 @@ const RichTextEditor = ({
         )}
       </div>
 
-      {/* Help text */}
+{/* Help text */}
       <div className="p-2 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 text-xs text-slate-500">
         <div className="flex flex-wrap gap-4">
           <span>**bold**</span>
@@ -279,7 +279,7 @@ const RichTextEditor = ({
           <span>`code`</span>
           <span>[link](url)</span>
           <span>@mention</span>
-          <span>> quote</span>
+          <span>&gt; quote</span>
         </div>
       </div>
     </div>
