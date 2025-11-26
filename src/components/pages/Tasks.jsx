@@ -12,7 +12,7 @@ import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import AssigneeSelector from "@/components/molecules/AssigneeSelector";
-
+import CommentsPanel from "@/components/molecules/CommentsPanel";
 const TaskModal = ({ isOpen, task, onClose, onSave }) => {
 const [formData, setFormData] = useState({
     title: "",
@@ -98,195 +98,165 @@ if (task) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg animate-scale-in">
-        <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-            {task ? "Edit Task" : "New Task"}
-          </h2>
-          <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
-            <ApperIcon name="X" className="h-4 w-4" />
-          </button>
-        </div>
-
-<form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-          <Input
-            label="Task Title"
-            value={formData.title}
-            onChange={(e) => setFormData({...formData, title: e.target.value})}
-            placeholder="Follow up with client"
-            required
-          />
-          
-          <div className="space-y-1">
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-              Description
-            </label>
-            <textarea
-              value={formData.description}
-              onChange={(e) => setFormData({...formData, description: e.target.value})}
-              placeholder="Additional details about this task..."
-              rows={3}
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
-            />
+<div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] animate-scale-in flex">
+        {/* Task Form Section */}
+        <div className="w-1/2 border-r border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              {task ? "Edit Task" : "New Task"}
+            </h2>
+            <button onClick={onClose} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+              <ApperIcon name="X" className="h-4 w-4" />
+            </button>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[calc(90vh-80px)] overflow-y-auto">
             <Input
-              label="Due Date"
-              type="date"
-              value={formData.dueDate}
-              onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+              label="Task Title"
+              value={formData.title}
+              onChange={(e) => setFormData({...formData, title: e.target.value})}
+              placeholder="Follow up with client"
+              required
             />
             
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Priority
+                Description
               </label>
-              <select 
-                value={formData.priority}
-                onChange={(e) => setFormData({...formData, priority: e.target.value})}
-                className="input-field"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Status
-              </label>
-              <select 
-                value={formData.status}
-                onChange={(e) => setFormData({...formData, status: e.target.value})}
-                className="input-field"
-              >
-                <option value="not-started">Not Started</option>
-                <option value="in-progress">In Progress</option>
-                <option value="completed">Completed</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-            </div>
-
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Category
-              </label>
-              <select 
-                value={formData.category}
-                onChange={(e) => setFormData({...formData, category: e.target.value})}
-                className="input-field"
-              >
-                <option value="follow-up">Follow-up</option>
-                <option value="proposal">Proposal</option>
-                <option value="meeting">Meeting</option>
-                <option value="email">Email</option>
-                <option value="call">Call</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Recurring Task Section */}
-          <div className="space-y-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-            <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300">Recurring Options</h3>
-            
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                  Recurrence
-                </label>
-                <select 
-                  value={formData.recurrenceType}
-                  onChange={(e) => setFormData({...formData, recurrenceType: e.target.value})}
-                  className="input-field"
-                >
-                  <option value="none">No Recurrence</option>
-                  <option value="daily">Daily</option>
-                  <option value="weekly">Weekly</option>
-                  <option value="monthly">Monthly</option>
-                </select>
-              </div>
-
-              {formData.recurrenceType !== 'none' && (
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                    Every
-                  </label>
-                  <div className="flex items-center space-x-2">
-                    <select 
-                      value={formData.recurrenceInterval}
-                      onChange={(e) => setFormData({...formData, recurrenceInterval: parseInt(e.target.value)})}
-                      className="input-field flex-1"
-                    >
-                      {[1,2,3,4,5,6,7,8,9,10].map(num => (
-                        <option key={num} value={num}>{num}</option>
-                      ))}
-                    </select>
-                    <span className="text-sm text-slate-600 dark:text-slate-400">
-                      {formData.recurrenceType === 'daily' ? 'day(s)' : 
-                       formData.recurrenceType === 'weekly' ? 'week(s)' : 
-                       formData.recurrenceType === 'monthly' ? 'month(s)' : ''}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {formData.recurrenceType !== 'none' && (
-              <div className="text-xs text-slate-500 dark:text-slate-400 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
-                <ApperIcon name="Info" className="h-4 w-4 inline mr-1" />
-                This task will repeat every {formData.recurrenceInterval} {formData.recurrenceType === 'daily' ? 'day' : formData.recurrenceType === 'weekly' ? 'week' : 'month'}{formData.recurrenceInterval > 1 ? 's' : ''} starting from the due date.
-              </div>
-            )}
-          </div>
-
-<div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Assigned To
-              </label>
-<AssigneeSelector
-                value={formData.assignedTo}
-                onChange={(value) => setFormData({...formData, assignedTo: value})}
-                placeholder="Assign task to..."
-                className="flex-1"
+              <textarea
+                value={formData.description}
+                onChange={(e) => setFormData({...formData, description: e.target.value})}
+                placeholder="Additional details about this task..."
+                rows={3}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all duration-200 resize-none"
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
-                Related To
-              </label>
-              <select 
-                value={formData.relatedTo}
-                onChange={(e) => setFormData({...formData, relatedTo: e.target.value})}
-                className="input-field"
-              >
-                <option value="">No relation</option>
-                {contacts.map(contact => (
-                  <option key={contact.Id} value={contact.Id}>
-                    {contact.name} - {contact.company}
-                  </option>
-                ))}
-              </select>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Due Date"
+                type="date"
+                value={formData.dueDate}
+                onChange={(e) => setFormData({...formData, dueDate: e.target.value})}
+              />
+              
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Priority
+                </label>
+                <select 
+                  value={formData.priority}
+                  onChange={(e) => setFormData({...formData, priority: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="urgent">Urgent</option>
+                </select>
+              </div>
             </div>
-          </div>
 
-          <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
-              Cancel
-            </Button>
-            <Button type="submit" disabled={saving} className="flex-1">
-              {saving ? "Saving..." : task ? "Update" : "Create"}
-            </Button>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Status
+                </label>
+                <select 
+                  value={formData.status}
+                  onChange={(e) => setFormData({...formData, status: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="not-started">Not Started</option>
+                  <option value="in-progress">In Progress</option>
+                  <option value="completed">Completed</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Category
+                </label>
+                <select 
+                  value={formData.category}
+                  onChange={(e) => setFormData({...formData, category: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="follow-up">Follow-up</option>
+                  <option value="proposal">Proposal</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="email">Email</option>
+                  <option value="call">Call</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Assigned To
+                </label>
+                <AssigneeSelector
+                  value={formData.assignedTo}
+                  onChange={(value) => setFormData({...formData, assignedTo: value})}
+                  placeholder="Assign task to..."
+                  className="flex-1"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Related To
+                </label>
+                <select 
+                  value={formData.relatedTo}
+                  onChange={(e) => setFormData({...formData, relatedTo: e.target.value})}
+                  className="input-field"
+                >
+                  <option value="">No relation</option>
+                  {contacts.map(contact => (
+                    <option key={contact.Id} value={contact.Id}>
+                      {contact.name} - {contact.company}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex space-x-3 pt-4">
+              <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+                Cancel
+              </Button>
+              <Button type="submit" disabled={saving} className="flex-1">
+                {saving ? "Saving..." : task ? "Update" : "Create"}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* Comments Section */}
+        <div className="w-1/2">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-700">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+              Discussion
+            </h3>
           </div>
-        </form>
+          <div className="h-[calc(90vh-80px)] overflow-hidden">
+            {task ? (
+              <CommentsPanel taskId={task.Id} />
+            ) : (
+              <div className="flex items-center justify-center h-full text-slate-500">
+                <div className="text-center">
+                  <ApperIcon name="MessageCircle" className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                  <p>Save the task to start discussing</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -791,8 +761,8 @@ const tasksByStatus = {
                     <div className="flex items-center">
                       <input
                         type="checkbox"
-                        checked={selectedTasks.includes('TASK_ID')}
-                        onChange={(e) => handleTaskSelection('TASK_ID', e.target.checked)}
+checked={selectedTasks.includes(task.Id)}
+                        onChange={(e) => handleTaskSelection(task.Id, e.target.checked)}
                         className="rounded border-gray-300 focus:ring-primary-500"
                       />
                     </div>
