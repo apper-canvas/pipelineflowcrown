@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import { toast } from 'react-toastify'
-import { format } from 'date-fns'
-import ApperIcon from '@/components/ApperIcon'
-import Button from '@/components/atoms/Button'
-import Input from '@/components/atoms/Input'
-import Badge from '@/components/atoms/Badge'
-import Loading from '@/components/ui/Loading'
-import ErrorView from '@/components/ui/ErrorView'
-import Empty from '@/components/ui/Empty'
-import { activityService } from '@/services/api/activityService'
-import { contactService } from '@/services/api/contactService'
-import { dealService } from '@/services/api/dealService'
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { format } from "date-fns";
+import { activityService } from "@/services/api/activityService";
+import { contactService } from "@/services/api/contactService";
+import { dealService } from "@/services/api/dealService";
+import ApperIcon from "@/components/ApperIcon";
+import Loading from "@/components/ui/Loading";
+import ErrorView from "@/components/ui/ErrorView";
+import Empty from "@/components/ui/Empty";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Badge from "@/components/atoms/Badge";
 
 export default function Activities() {
   const [activities, setActivities] = useState([])
@@ -25,11 +25,11 @@ export default function Activities() {
   const [editingActivity, setEditingActivity] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const activityTypes = [
-    { value: 'call', label: 'Call', icon: 'Phone' },
-    { value: 'email', label: 'Email', icon: 'Mail' },
-    { value: 'meeting', label: 'Meeting', icon: 'Calendar' },
-    { value: 'note', label: 'Note', icon: 'FileText' }
+const activityTypes = [
+    { value: 'call', label: 'Call', icon: 'Phone', color: 'blue' },
+    { value: 'email', label: 'Email', icon: 'Mail', color: 'green' },
+    { value: 'meeting', label: 'Meeting', icon: 'Calendar', color: 'purple' },
+    { value: 'note', label: 'Note', icon: 'FileText', color: 'gray' }
   ]
 
   const priorities = [
@@ -98,9 +98,46 @@ export default function Activities() {
     return deal ? deal.title : 'Unknown Deal'
   }
 
-  const getActivityIcon = (type) => {
+const getActivityIcon = (type) => {
     const activityType = activityTypes.find(t => t.value === type)
     return activityType ? activityType.icon : 'Activity'
+  }
+
+  const getActivityColor = (type) => {
+    const activityType = activityTypes.find(t => t.value === type)
+    return activityType ? activityType.color : 'gray'
+  }
+
+  const getActivityColorClasses = (type) => {
+    const color = getActivityColor(type)
+    switch (color) {
+      case 'blue':
+        return 'bg-blue-100 text-blue-600'
+      case 'green':
+        return 'bg-green-100 text-green-600'
+      case 'purple':
+        return 'bg-purple-100 text-purple-600'
+      case 'gray':
+        return 'bg-gray-100 text-gray-600'
+      default:
+        return 'bg-gray-100 text-gray-600'
+    }
+  }
+
+  const getActivityBadgeColor = (type) => {
+    const color = getActivityColor(type)
+    switch (color) {
+      case 'blue':
+        return 'bg-blue-50 text-blue-700 border-blue-200'
+      case 'green':
+        return 'bg-green-50 text-green-700 border-green-200'
+      case 'purple':
+        return 'bg-purple-50 text-purple-700 border-purple-200'
+      case 'gray':
+        return 'bg-gray-50 text-gray-700 border-gray-200'
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200'
+    }
   }
 
   const getPriorityColor = (priority) => {
@@ -112,7 +149,7 @@ export default function Activities() {
     }
   }
 
-  const formatActivityTime = (dateString) => {
+const formatActivityTime = (dateString) => {
     const date = new Date(dateString)
     const now = new Date()
     const diffInHours = (now - date) / (1000 * 60 * 60)
@@ -125,6 +162,27 @@ export default function Activities() {
       return `${Math.floor(diffInHours / 24)}d ago`
     } else {
       return format(date, "MMM d, yyyy")
+    }
+  }
+
+  const formatScheduledTime = (scheduledDate, scheduledTime) => {
+    if (!scheduledDate) return null
+    
+    const date = new Date(scheduledDate)
+    if (scheduledTime) {
+      const [hours, minutes] = scheduledTime.split(':')
+      date.setHours(parseInt(hours), parseInt(minutes))
+    }
+    
+    const now = new Date()
+    const diffInHours = (date - now) / (1000 * 60 * 60)
+    
+    if (diffInHours < 24 && diffInHours > 0) {
+      return `Today at ${format(date, 'h:mm a')}`
+    } else if (diffInHours < 168 && diffInHours > 0) {
+      return format(date, "EEE 'at' h:mm a")
+    } else {
+      return format(date, "MMM d 'at' h:mm a")
     }
   }
 
@@ -213,7 +271,7 @@ export default function Activities() {
             <div key={activity.Id} className="card hover:shadow-lg transition-all duration-200 group">
               <div className="flex items-start space-x-4">
                 <div className="flex-shrink-0">
-                  <div className="w-10 h-10 rounded-full bg-primary-100 flex items-center justify-center">
+<div className={`w-10 h-10 rounded-full ${getActivityColorClasses(activity.type)} flex items-center justify-center`}>
                     <ApperIcon
                       name={getActivityIcon(activity.type)}
                       className="h-5 w-5 text-primary-600"
@@ -223,10 +281,13 @@ export default function Activities() {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-2">
+<div className="flex items-center space-x-2">
                       <Badge variant="default" size="sm">
-                        {activityTypes.find(t => t.value === activity.type)?.label || activity.type}
+<span className={`px-2 py-1 rounded-full text-xs font-medium border ${getActivityBadgeColor(activity.type)}`}>
+                          {activityTypes.find(t => t.value === activity.type)?.label || activity.type}
+                        </span>
                       </Badge>
+                    </div>
                       {activity.priority && (
                         <Badge
                           variant="secondary"
@@ -284,9 +345,22 @@ export default function Activities() {
                     </div>
                   )}
                   
+{activity.type === 'meeting' && activity.scheduledDate && (
+                    <div className="text-sm text-purple-600 mb-1 flex items-center">
+                      <ApperIcon name="Clock" className="w-4 h-4 mr-1" />
+                      {formatScheduledTime(activity.scheduledDate, activity.scheduledTime)}
+                    </div>
+                  )}
                   {activity.type === 'meeting' && activity.participants && (
-                    <div className="text-sm text-gray-600 mb-1">
+                    <div className="text-sm text-gray-600 mb-1 flex items-center">
+                      <ApperIcon name="Users" className="w-4 h-4 mr-1" />
                       Participants: {activity.participants.join(', ')}
+                    </div>
+                  )}
+                  {activity.type === 'meeting' && activity.location && (
+                    <div className="text-sm text-gray-600 mb-1 flex items-center">
+                      <ApperIcon name="MapPin" className="w-4 h-4 mr-1" />
+                      {activity.location}
                     </div>
                   )}
 
@@ -339,23 +413,44 @@ export default function Activities() {
     </div>
   )
 
-  async function handleSaveActivity(activityData) {
+async function handleSaveActivity(activityData) {
     try {
       setIsSubmitting(true)
       
+      // Prepare activity data with meeting scheduling
+      const processedData = { ...activityData }
+      
+      // For meetings, combine date and time for scheduling
+      if (activityData.type === 'meeting' && activityData.scheduledDate && activityData.scheduledTime) {
+        const scheduledDateTime = new Date(activityData.scheduledDate)
+        const [hours, minutes] = activityData.scheduledTime.split(':')
+        scheduledDateTime.setHours(parseInt(hours), parseInt(minutes))
+        processedData.scheduledDateTime = scheduledDateTime.toISOString()
+      }
+      
       if (editingActivity) {
-        await activityService.update(editingActivity.Id, activityData)
-        toast.success("Activity updated successfully")
+        await activityService.update(editingActivity.Id, processedData)
+        if (activityData.type === 'meeting') {
+          toast.success("Meeting updated successfully")
+        } else {
+          toast.success("Activity updated successfully")
+        }
       } else {
-        await activityService.create(activityData)
-        toast.success("Activity logged successfully")
+        await activityService.create(processedData)
+        if (activityData.type === 'meeting') {
+          toast.success("Meeting scheduled successfully")
+        } else {
+          toast.success("Activity logged successfully")
+        }
       }
       
       setShowActivityModal(false)
       setEditingActivity(null)
       await loadData()
     } catch (error) {
-      toast.error(editingActivity ? "Failed to update activity" : "Failed to log activity")
+      const action = editingActivity ? "update" : "create"
+      const activityType = activityData.type === 'meeting' ? "meeting" : "activity"
+      toast.error(`Failed to ${action} ${activityType}`)
       console.error("Activity save error:", error)
     } finally {
       setIsSubmitting(false)
@@ -376,9 +471,9 @@ export default function Activities() {
   }
 }
 
-// Activity Modal Component
+// Activity Modal Component with Meeting Scheduling
 function ActivityModal({ activity, contacts, deals, onClose, onSave, isSubmitting }) {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     type: activity?.type || 'call',
     description: activity?.description || '',
     notes: activity?.notes || '',
@@ -389,20 +484,21 @@ function ActivityModal({ activity, contacts, deals, onClose, onSave, isSubmittin
     recordingLink: activity?.recordingLink || '',
     participants: activity?.participants ? activity.participants.join(', ') : '',
     location: activity?.location || '',
-    subject: activity?.subject || ''
+    subject: activity?.subject || '',
+    scheduledDate: activity?.scheduledDate || '',
+    scheduledTime: activity?.scheduledTime || ''
   })
 
-  const activityTypes = [
-    { value: 'call', label: 'Call', icon: 'Phone' },
-    { value: 'email', label: 'Email', icon: 'Mail' },
-    { value: 'meeting', label: 'Meeting', icon: 'Calendar' },
-    { value: 'note', label: 'Note', icon: 'FileText' }
+const activityTypes = [
+    { value: 'call', label: 'Call', icon: 'Phone', color: 'blue' },
+    { value: 'email', label: 'Email', icon: 'Mail', color: 'green' },
+    { value: 'meeting', label: 'Meeting', icon: 'Calendar', color: 'purple' },
+    { value: 'note', label: 'Note', icon: 'FileText', color: 'gray' }
   ]
 
   const handleSubmit = (e) => {
     e.preventDefault()
-    
-    const activityData = {
+const activityData = {
       ...formData,
       contactId: formData.contactId ? parseInt(formData.contactId) : null,
       dealId: formData.dealId ? parseInt(formData.dealId) : null,
@@ -459,26 +555,54 @@ function ActivityModal({ activity, contacts, deals, onClose, onSave, isSubmittin
           </div>
         )
       case 'meeting':
-        return (
+return (
           <>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <ApperIcon name="Calendar" className="w-4 h-4 inline mr-1" />
+                  Meeting Date
+                </label>
+                <Input
+                  type="date"
+                  value={formData.scheduledDate}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduledDate: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <ApperIcon name="Clock" className="w-4 h-4 inline mr-1" />
+                  Meeting Time
+                </label>
+                <Input
+                  type="time"
+                  value={formData.scheduledTime}
+                  onChange={(e) => setFormData(prev => ({ ...prev, scheduledTime: e.target.value }))}
+                  className="w-full"
+                />
+              </div>
+            </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
+                <ApperIcon name="Users" className="w-4 h-4 inline mr-1" />
                 Participants (comma-separated)
               </label>
               <Input
                 value={formData.participants}
                 onChange={(e) => setFormData(prev => ({ ...prev, participants: e.target.value }))}
-                placeholder="John Doe, Jane Smith"
+                placeholder="John Doe, Jane Smith, team@company.com"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Location
+                <ApperIcon name="MapPin" className="w-4 h-4 inline mr-1" />
+                Location / Meeting Link
               </label>
               <Input
                 value={formData.location}
                 onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
-                placeholder="Meeting location or video link"
+                placeholder="Conference room, Zoom link, or address"
               />
             </div>
           </>
