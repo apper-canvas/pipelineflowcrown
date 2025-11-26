@@ -1,4 +1,4 @@
-import tasksData from "@/services/mockData/tasks.json"
+import tasksData from "@/services/mockData/tasks.json";
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
@@ -22,11 +22,13 @@ export const taskService = {
   async create(taskData) {
     await delay(300)
     const newTask = {
-      ...taskData,
+...taskData,
       Id: Math.max(...tasks.map(t => t.Id)) + 1,
-      status: taskData.status || "pending",
+      status: taskData.status || "not-started",
+      category: taskData.category || "follow-up",
+      assignedTo: taskData.assignedTo || "current-user",
       createdAt: new Date().toISOString(),
-      completedAt: null
+      completedAt: taskData.status === "completed" ? new Date().toISOString() : null
     }
     tasks = [newTask, ...tasks]
     return { ...newTask }
@@ -39,11 +41,11 @@ export const taskService = {
       throw new Error("Task not found")
     }
     
-    const updatedTask = {
+const updatedTask = {
       ...tasks[index],
       ...taskData,
       Id: parseInt(id),
-      completedAt: taskData.status === "completed" ? new Date().toISOString() : null,
+      completedAt: taskData.status === "completed" && !tasks[index].completedAt ? new Date().toISOString() : (taskData.status === "completed" ? tasks[index].completedAt : null),
       updatedAt: new Date().toISOString()
     }
     

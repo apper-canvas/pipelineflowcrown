@@ -12,12 +12,14 @@ import { contactService } from "@/services/api/contactService"
 import { format, isToday, isTomorrow, isPast } from "date-fns"
 
 const TaskModal = ({ isOpen, task, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: "",
     description: "",
     dueDate: "",
     priority: "medium",
-    status: "pending",
+    status: "not-started",
+    category: "follow-up",
+    assignedTo: "current-user",
     relatedTo: "",
     relatedType: "contact"
   })
@@ -31,7 +33,7 @@ const TaskModal = ({ isOpen, task, onClose, onSave }) => {
   }, [isOpen])
 
   useEffect(() => {
-    if (task) {
+if (task) {
       setFormData({
         ...task,
         dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
@@ -42,7 +44,9 @@ const TaskModal = ({ isOpen, task, onClose, onSave }) => {
         description: "",
         dueDate: "",
         priority: "medium",
-        status: "pending",
+        status: "not-started",
+        category: "follow-up",
+        assignedTo: "current-user",
         relatedTo: "",
         relatedType: "contact"
       })
@@ -95,7 +99,7 @@ const TaskModal = ({ isOpen, task, onClose, onSave }) => {
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+<form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
           <Input
             label="Task Title"
             value={formData.title}
@@ -152,10 +156,46 @@ const TaskModal = ({ isOpen, task, onClose, onSave }) => {
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
                 className="input-field"
               >
-                <option value="pending">Pending</option>
+                <option value="not-started">Not Started</option>
                 <option value="in-progress">In Progress</option>
                 <option value="completed">Completed</option>
                 <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Category
+              </label>
+              <select 
+                value={formData.category}
+                onChange={(e) => setFormData({...formData, category: e.target.value})}
+                className="input-field"
+              >
+                <option value="follow-up">Follow-up</option>
+                <option value="proposal">Proposal</option>
+                <option value="meeting">Meeting</option>
+                <option value="email">Email</option>
+                <option value="call">Call</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Assigned To
+              </label>
+              <select 
+                value={formData.assignedTo}
+                onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
+                className="input-field"
+              >
+                <option value="current-user">Me</option>
+                <option value="team-member-1">John Smith</option>
+                <option value="team-member-2">Sarah Wilson</option>
+                <option value="team-member-3">Mike Johnson</option>
               </select>
             </div>
 
@@ -197,11 +237,11 @@ const Tasks = () => {
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [selectedTask, setSelectedTask] = useState(null)
+const [selectedTask, setSelectedTask] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [filterStatus, setFilterStatus] = useState("all")
   const [filterPriority, setFilterPriority] = useState("all")
-
+  const [sortBy, setSortBy] = useState("dueDate")
   useEffect(() => {
     loadTasks()
     loadContacts()
@@ -309,8 +349,8 @@ const Tasks = () => {
     return statusMatch && priorityMatch
   })
 
-  const tasksByStatus = {
-    pending: tasks.filter(t => t.status === "pending").length,
+const tasksByStatus = {
+    "not-started": tasks.filter(t => t.status === "not-started").length,
     "in-progress": tasks.filter(t => t.status === "in-progress").length,
     completed: tasks.filter(t => t.status === "completed").length,
     cancelled: tasks.filter(t => t.status === "cancelled").length
@@ -318,6 +358,24 @@ const Tasks = () => {
 
   const overdueTasks = tasks.filter(t => t.dueDate && isPast(new Date(t.dueDate)) && !isToday(new Date(t.dueDate)) && t.status !== "completed").length
 
+  // Sort tasks
+  const sortedFilteredTasks = [...filteredTasks].sort((a, b) => {
+    switch (sortBy) {
+      case "dueDate":
+        if (!a.dueDate) return 1
+        if (!b.dueDate) return -1
+        return new Date(a.dueDate) - new Date(b.dueDate)
+      case "priority":
+        const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 }
+        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0)
+      case "title":
+        return a.title.localeCompare(b.title)
+      case "status":
+        return a.status.localeCompare(b.status)
+      default:
+        return 0
+    }
+  })
   if (loading) return <Loading type="skeleton" />
   if (error) return <ErrorView message={error} onRetry={loadTasks} />
 
@@ -349,7 +407,58 @@ const Tasks = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-wrap gap-4">
+{/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{tasksByStatus["not-started"]}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Not Started</p>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-blue-100 dark:bg-blue-900 flex items-center justify-center">
+              <ApperIcon name="Clock" className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{tasksByStatus["in-progress"]}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">In Progress</p>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-orange-100 dark:bg-orange-900 flex items-center justify-center">
+              <ApperIcon name="Play" className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{tasksByStatus.completed}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Completed</p>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-green-100 dark:bg-green-900 flex items-center justify-center">
+              <ApperIcon name="CheckCircle" className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-slate-200 dark:border-slate-700">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-2xl font-bold text-red-600 dark:text-red-400">{overdueTasks}</p>
+              <p className="text-sm text-slate-600 dark:text-slate-400">Overdue</p>
+            </div>
+            <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900 flex items-center justify-center">
+              <ApperIcon name="AlertTriangle" className="h-5 w-5 text-red-600 dark:text-red-400" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap gap-4 items-center">
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status:</label>
           <select 
@@ -358,7 +467,7 @@ const Tasks = () => {
             className="input-field w-auto"
           >
             <option value="all">All ({tasks.length})</option>
-            <option value="pending">Pending ({tasksByStatus.pending})</option>
+            <option value="not-started">Not Started ({tasksByStatus["not-started"]})</option>
             <option value="in-progress">In Progress ({tasksByStatus["in-progress"]})</option>
             <option value="completed">Completed ({tasksByStatus.completed})</option>
             <option value="cancelled">Cancelled ({tasksByStatus.cancelled})</option>
@@ -377,6 +486,20 @@ const Tasks = () => {
             <option value="high">High</option>
             <option value="medium">Medium</option>
             <option value="low">Low</option>
+          </select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Sort by:</label>
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value)}
+            className="input-field w-auto"
+          >
+            <option value="dueDate">Due Date</option>
+            <option value="priority">Priority</option>
+            <option value="title">Title</option>
+            <option value="status">Status</option>
           </select>
         </div>
       </div>
@@ -455,7 +578,7 @@ const Tasks = () => {
                   </div>
 
                   {/* Task Meta */}
-                  <div className="flex items-center flex-wrap gap-3 mt-3">
+<div className="flex items-center flex-wrap gap-3 mt-3">
                     <Badge variant={getPriorityColor(task.priority)} size="sm">
                       {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                     </Badge>
@@ -464,10 +587,19 @@ const Tasks = () => {
                       {task.status.replace("-", " ").charAt(0).toUpperCase() + task.status.replace("-", " ").slice(1)}
                     </Badge>
 
+                    {task.category && (
+                      <Badge variant="outline" size="sm">
+                        {task.category.charAt(0).toUpperCase() + task.category.slice(1)}
+                      </Badge>
+                    )}
+
                     {task.dueDate && (
                       <div className={`flex items-center space-x-1 text-sm ${getDateColor(task.dueDate)}`}>
                         <ApperIcon name="Calendar" className="h-4 w-4" />
                         <span>{getDateLabel(task.dueDate)}</span>
+                        {task.dueDate && isPast(new Date(task.dueDate)) && !isToday(new Date(task.dueDate)) && task.status !== "completed" && (
+                          <ApperIcon name="AlertTriangle" className="h-4 w-4 text-red-500 ml-1" />
+                        )}
                       </div>
                     )}
 
@@ -480,6 +612,11 @@ const Tasks = () => {
 
                     <div className="text-xs text-slate-400">
                       Created {format(new Date(task.createdAt), "MMM d, yyyy")}
+                      {task.completedAt && (
+                        <span className="ml-2 text-green-600">
+                          • Completed {format(new Date(task.completedAt), "MMM d, yyyy")}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
