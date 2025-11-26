@@ -13,11 +13,18 @@ if (assigneeId || (assignees && assignees.length > 0)) {
     }
   }, [assigneeId, assignees])
 
-  const loadAssignee = async () => {
+const loadAssignee = async () => {
     try {
       setLoading(true)
+      
+      // Only attempt to load if assigneeId is valid
+      if (!assigneeId) {
+        setAssignee(null)
+        return
+      }
+      
       const member = await teamMemberService.getById(assigneeId)
-      setAssignee(member)
+      setAssignee(member) // member will be null if not found, which is handled gracefully
     } catch (error) {
       console.error('Error loading assignee:', error)
       setAssignee(null)

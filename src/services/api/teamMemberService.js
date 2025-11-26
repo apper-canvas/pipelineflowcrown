@@ -46,13 +46,21 @@ export const teamMemberService = {
     return [...teamMembers]
   },
 
-  async getById(id) {
+async getById(id) {
     await delay(200)
-    const member = teamMembers.find(m => m.Id === parseInt(id))
-    if (!member) {
-      throw new Error("Team member not found")
+    
+    // Handle null/undefined/invalid IDs gracefully
+    if (id === null || id === undefined || id === '') {
+      return null
     }
-    return { ...member }
+    
+    const parsedId = parseInt(id)
+    if (isNaN(parsedId)) {
+      return null
+    }
+    
+    const member = teamMembers.find(m => m.Id === parsedId)
+    return member ? { ...member } : null
   },
 
   getCurrentUser() {
