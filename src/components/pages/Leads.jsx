@@ -606,7 +606,7 @@ return (
             }
 
 return (
-              <div className="relative">
+              <div key={lead.Id} className="relative">
                 {/* Selection Checkbox */}
                 <div className="absolute top-4 left-4 z-10">
                   <input
@@ -616,160 +616,161 @@ return (
                     className="rounded border-gray-300 focus:ring-primary-500"
                   />
                 </div>
-<div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center space-x-2">
-                        <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
-                        <Badge variant="default" size="sm">
-                          {getStageLabel(lead.stage)}
-                        </Badge>
-                        {lead.source && (
-                          <Badge variant="outline" size="sm" className="text-xs">
-                            {getSourceLabel(lead.source)}
+                <div className="card hover:shadow-lg transition-all duration-200 group">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                          <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
+                          <Badge variant="default" size="sm">
+                            {getStageLabel(lead.stage)}
                           </Badge>
+                          {lead.source && (
+                            <Badge variant="outline" size="sm" className="text-xs">
+                              {getSourceLabel(lead.source)}
+                            </Badge>
+                          )}
+                        </div>
+                        {lead.assignedTo && (
+                          <AssigneeDisplay 
+                            assigneeId={lead.assignedTo} 
+                            size="sm"
+                            showName={false}
+                          />
                         )}
                       </div>
-{lead.assignedTo && (
-                        <AssigneeDisplay 
-                          assigneeId={lead.assignedTo} 
-                          size="sm"
-                          showName={false}
-                        />
-                      )}
-                    </div>
-                    {/* Lead Score Badge */}
-                    <div className="flex items-center space-x-2 mb-3">
-                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getScoreColor(lead.score || 0)}`}>
-                        <div className="flex items-center space-x-1">
-                          <ApperIcon name="TrendingUp" className="h-3 w-3" />
-                          <span>{lead.score || 0}/100</span>
-                          <span className="text-xs opacity-75">({getScoreLabel(lead.score || 0)})</span>
+                      {/* Lead Score Badge */}
+                      <div className="flex items-center space-x-2 mb-3">
+                        <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getScoreColor(lead.score || 0)}`}>
+                          <div className="flex items-center space-x-1">
+                            <ApperIcon name="TrendingUp" className="h-3 w-3" />
+                            <span>{lead.score || 0}/100</span>
+                            <span className="text-xs opacity-75">({getScoreLabel(lead.score || 0)})</span>
+                          </div>
                         </div>
                       </div>
+
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                        {lead.title}
+                      </h3>
+                      <p className="text-slate-600 dark:text-slate-400 text-sm">
+                        {lead.company}
+                      </p>
                     </div>
-
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                      {lead.title}
-                    </h3>
-                    <p className="text-slate-600 dark:text-slate-400 text-sm">
-                      {lead.company}
-                    </p>
+                    
+                    <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                      <button
+                        onClick={() => {
+                          setSelectedLead(lead)
+                          setIsModalOpen(true)
+                        }}
+                        className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                        title="Edit lead"
+                      >
+                        <ApperIcon name="Edit" className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(lead.Id)}
+                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                        title="Delete lead"
+                      >
+                        <ApperIcon name="Trash2" className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
-                  
-                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                    <button
-                      onClick={() => {
-                        setSelectedLead(lead)
-                        setIsModalOpen(true)
-                      }}
-                      className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
-                      title="Edit lead"
-                    >
-                      <ApperIcon name="Edit" className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(lead.Id)}
-                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                      title="Delete lead"
-                    >
-                      <ApperIcon name="Trash2" className="h-4 w-4" />
-                    </button>
-                  </div>
-                </div>
 
-                {lead.contactName && (
-                  <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                    <ApperIcon name="User" className="h-4 w-4" />
-                    <span>{lead.contactName}</span>
-                  </div>
-                )}
+                  {lead.contactName && (
+                    <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                      <ApperIcon name="User" className="h-4 w-4" />
+                      <span>{lead.contactName}</span>
+                    </div>
+                  )}
 
-                <div className="grid grid-cols-2 gap-4 mb-3">
-                  {lead.value && (
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
-                      <ApperIcon name="DollarSign" className="h-4 w-4" />
+                  <div className="grid grid-cols-2 gap-4 mb-3">
+                    {lead.value && (
+                      <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                        <ApperIcon name="DollarSign" className="h-4 w-4" />
+                        <div>
+                          <div className="text-xs opacity-75">Value</div>
+                          <div className="font-medium">${parseFloat(lead.value).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    )}
+
+                    {lead.budget && (
+                      <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                        <ApperIcon name="Wallet" className="h-4 w-4" />
+                        <div>
+                          <div className="text-xs opacity-75">Budget</div>
+                          <div className="font-medium">${parseFloat(lead.budget).toLocaleString()}</div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {lead.timeline && (
+                    <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                      <ApperIcon name="Calendar" className="h-4 w-4" />
                       <div>
-                        <div className="text-xs opacity-75">Value</div>
-                        <div className="font-medium">${parseFloat(lead.value).toLocaleString()}</div>
+                        <span className="text-xs opacity-75">Timeline: </span>
+                        <span className="font-medium">{lead.timeline}</span>
                       </div>
                     </div>
                   )}
 
-                  {lead.budget && (
-                    <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
-                      <ApperIcon name="Wallet" className="h-4 w-4" />
-                      <div>
-                        <div className="text-xs opacity-75">Budget</div>
-                        <div className="font-medium">${parseFloat(lead.budget).toLocaleString()}</div>
-                      </div>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                      {lead.email && (
+                        <a 
+                          href={`mailto:${lead.email}`}
+                          className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                          title={`Email ${lead.email}`}
+                        >
+                          <ApperIcon name="Mail" className="h-4 w-4" />
+                          <span>Email</span>
+                        </a>
+                      )}
+                      {lead.phone && (
+                        <a 
+                          href={`tel:${lead.phone}`}
+                          className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                          title={`Call ${lead.phone}`}
+                        >
+                          <ApperIcon name="Phone" className="h-4 w-4" />
+                          <span>Call</span>
+                        </a>
+                      )}
+                    </div>
+
+                    <select
+                      value={lead.stage}
+                      onChange={(e) => handleStageChange(lead.Id, e.target.value)}
+                      className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
+                      onClick={(e) => e.stopPropagation()}
+                      title="Change stage"
+                    >
+                      {stages.map(stage => (
+                        <option key={stage.id} value={stage.id}>
+                          {stage.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {lead.notes && (
+                    <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-700 rounded text-sm text-slate-600 dark:text-slate-400">
+                      {lead.notes.length > 100 ? `${lead.notes.substring(0, 100)}...` : lead.notes}
                     </div>
                   )}
-                </div>
 
-                {lead.timeline && (
-                  <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                    <ApperIcon name="Calendar" className="h-4 w-4" />
-                    <div>
-                      <span className="text-xs opacity-75">Timeline: </span>
-                      <span className="font-medium">{lead.timeline}</span>
-                    </div>
+                  <div className="mt-3 text-xs text-slate-400">
+                    Created {format(new Date(lead.createdAt), "MMM d, yyyy")}
                   </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-                  <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
-                    {lead.email && (
-                      <a 
-                        href={`mailto:${lead.email}`}
-                        className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
-                        title={`Email ${lead.email}`}
-                      >
-                        <ApperIcon name="Mail" className="h-4 w-4" />
-                        <span>Email</span>
-                      </a>
-                    )}
-                    {lead.phone && (
-                      <a 
-                        href={`tel:${lead.phone}`}
-                        className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
-                        title={`Call ${lead.phone}`}
-                      >
-                        <ApperIcon name="Phone" className="h-4 w-4" />
-                        <span>Call</span>
-                      </a>
-                    )}
-                  </div>
-
-                  <select
-                    value={lead.stage}
-                    onChange={(e) => handleStageChange(lead.Id, e.target.value)}
-                    className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Change stage"
-                  >
-                    {stages.map(stage => (
-                      <option key={stage.id} value={stage.id}>
-                        {stage.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {lead.notes && (
-                  <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-700 rounded text-sm text-slate-600 dark:text-slate-400">
-                    {lead.notes.length > 100 ? `${lead.notes.substring(0, 100)}...` : lead.notes}
-                  </div>
-                )}
-
-                <div className="mt-3 text-xs text-slate-400">
-                  Created {format(new Date(lead.createdAt), "MMM d, yyyy")}
                 </div>
               </div>
             )
           })}
-</div>
+        </div>
       )}
 
       {/* Lead Modal */}
