@@ -747,10 +747,6 @@ message={searchTerm ? "Try adjusting your search terms." : "Start building your 
                   className="rounded border-gray-300 focus:ring-primary-500"
                 />
               </div>
-              
-              <div 
-                className="cursor-pointer pl-8"
-                onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
 <div 
                 className="cursor-pointer pl-8"
                 onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
