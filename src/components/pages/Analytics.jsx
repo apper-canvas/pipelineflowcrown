@@ -11,7 +11,7 @@ const Analytics = () => {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [selectedPeriod, setSelectedPeriod] = useState("30d")
+const [selectedPeriod, setSelectedPeriod] = useState("30d")
   const [selectedMetric, setSelectedMetric] = useState("revenue")
 
   useEffect(() => {
@@ -74,8 +74,11 @@ const Analytics = () => {
           fontSize: '12px'
         },
         formatter: (value) => {
-          if (selectedMetric === 'revenue') {
+if (selectedMetric === 'revenue') {
             return '$' + value.toLocaleString()
+          }
+          if (selectedMetric === 'winrate') {
+            return value.toFixed(1) + '%'
           }
           return value.toLocaleString()
         }
@@ -101,7 +104,7 @@ const Analytics = () => {
     }]
   })
 
-  const getPipelineChartOptions = () => ({
+const getPipelineChartOptions = () => ({
     chart: {
       type: 'donut',
       height: 350
@@ -142,6 +145,53 @@ const Analytics = () => {
     }]
   })
 
+  const getWinLossChartOptions = () => ({
+    chart: {
+      type: 'donut',
+      height: 350
+    },
+    labels: data?.winLossData?.winLossChart?.labels || ['Won Deals', 'Lost Deals'],
+    colors: ['#10b981', '#ef4444'],
+    legend: {
+      position: 'bottom',
+      labels: {
+        colors: '#64748b'
+      }
+    },
+    plotOptions: {
+      pie: {
+        donut: {
+          size: '70%',
+          labels: {
+            show: true,
+            total: {
+              show: true,
+              label: 'Win Rate',
+              formatter: () => {
+                return data?.winLossData?.winRate ? `${data.winLossData.winRate.toFixed(1)}%` : '0%'
+              }
+            }
+          }
+        }
+      }
+    },
+    dataLabels: {
+      enabled: true,
+      formatter: function(val, opts) {
+        const value = opts.w.globals.series[opts.seriesIndex]
+        return `${value} (${val.toFixed(1)}%)`
+      }
+    },
+    responsive: [{
+      breakpoint: 768,
+      options: {
+        chart: {
+          height: 300
+        }
+      }
+    }]
+  })
+
   if (loading) return <Loading type="skeleton" />
   if (error) return <ErrorView message={error} onRetry={loadAnalytics} />
   if (!data) return <ErrorView message="No analytics data available" onRetry={loadAnalytics} />
@@ -163,10 +213,11 @@ const Analytics = () => {
             onChange={(e) => setSelectedMetric(e.target.value)}
             className="input-field"
           >
-            <option value="revenue">Revenue</option>
+<option value="revenue">Revenue</option>
             <option value="deals">Deals</option>
             <option value="contacts">Contacts</option>
             <option value="activities">Activities</option>
+            <option value="winrate">Win Rate</option>
           </select>
           
           <select 
@@ -207,15 +258,66 @@ const Analytics = () => {
             height={350}
           />
         </div>
-
-        {/* Pipeline Distribution */}
+{/* Pipeline Distribution */}
         <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Pipeline Distribution</h3>
+          </div>
           <Chart
             options={getPipelineChartOptions()}
             series={data.pipelineData?.series || []}
             type="donut"
             height={350}
           />
+        </div>
+
+        {/* Win/Loss Analysis */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Win/Loss Analysis</h3>
+          </div>
+          {data?.winLossData ? (
+            <>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {data.winLossData.wonDeals}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Won Deals</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {data.winLossData.lostDeals}
+                  </div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400">Lost Deals</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {data.winLossData.winRate.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Win Rate</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {data.winLossData.conversionRate.toFixed(1)}%
+                  </div>
+                  <div className="text-xs text-slate-500 dark:text-slate-400">Conversion Rate</div>
+                </div>
+              </div>
+              <Chart
+                options={getWinLossChartOptions()}
+                series={data.winLossData.winLossChart?.series || []}
+                type="donut"
+                height={300}
+              />
+            </>
+          ) : (
+            <div className="flex items-center justify-center h-64 text-slate-500 dark:text-slate-400">
+              Loading win/loss data...
+            </div>
+          )}
         </div>
       </div>
 
