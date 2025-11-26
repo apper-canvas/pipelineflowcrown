@@ -187,14 +187,14 @@ const DeleteConfirmModal = ({ isOpen, contactName, onClose, onConfirm, isDeletin
 
 const Contacts = () => {
   const navigate = useNavigate()
-  const [contacts, setContacts] = useState([])
+const [contacts, setContacts] = useState([])
   const [filteredContacts, setFilteredContacts] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
   const [selectedContact, setSelectedContact] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [searchTerm, setSearchTerm] = useState("")
-const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
   const [isDeleting, setIsDeleting] = useState(false)
   const [expandedContact, setExpandedContact] = useState(null)
   const [selectedContacts, setSelectedContacts] = useState([])
@@ -202,7 +202,9 @@ const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
   const [showTimeline, setShowTimeline] = useState({ isOpen: false, contact: null })
   const [showAvatarUpload, setShowAvatarUpload] = useState({ isOpen: false, contact: null })
   const [isExporting, setIsExporting] = useState(false)
-
+  const [viewMode, setViewMode] = useState('cards') // 'cards' or 'table'
+  const [detailModal, setDetailModal] = useState({ isOpen: false, contact: null })
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
   useEffect(() => {
 loadContacts()
   }, [])
@@ -368,6 +370,30 @@ const getInitials = (name) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
   }
 
+  const handleSort = (key) => {
+    let direction = 'asc'
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc'
+    }
+    setSortConfig({ key, direction })
+  }
+
+  const sortedContacts = React.useMemo(() => {
+    let sortableContacts = [...filteredContacts]
+    if (sortConfig.key) {
+      sortableContacts.sort((a, b) => {
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? -1 : 1
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === 'asc' ? 1 : -1
+        }
+        return 0
+      })
+    }
+    return sortableContacts
+  }, [filteredContacts, sortConfig])
+
   if (loading) return <Loading type="skeleton" />
   if (error) return <ErrorView message={error} onRetry={loadContacts} />
 
@@ -382,6 +408,30 @@ const getInitials = (name) => {
           </p>
         </div>
 <div className="flex items-center space-x-2">
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setViewMode('cards')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'cards' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ApperIcon name="Grid3X3" className="h-4 w-4" />
+            </button>
+            <button
+              onClick={() => setViewMode('table')}
+              className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+                viewMode === 'table' 
+                  ? 'bg-white text-gray-900 shadow-sm' 
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <ApperIcon name="List" className="h-4 w-4" />
+            </button>
+          </div>
+          
           <Button 
             onClick={handleExportCsv}
             disabled={isExporting}
@@ -464,8 +514,8 @@ const getInitials = (name) => {
         </div>
       )}
 
-      {/* Contacts Grid */}
-{filteredContacts.length === 0 ? (
+{/* Contacts Display */}
+      {sortedContacts.length === 0 ? (
         <Empty 
           icon="Users"
           title={searchTerm ? "No contacts found" : "No contacts yet"}
@@ -476,9 +526,165 @@ const getInitials = (name) => {
             setIsModalOpen(true)
           }}
         />
+      ) : viewMode === 'table' ? (
+        /* Table View */
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-3 text-left">
+                    <input
+                      type="checkbox"
+                      checked={selectedContacts.length === sortedContacts.length}
+                      onChange={handleSelectAll}
+                      className="rounded border-gray-300 focus:ring-primary-500"
+                    />
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('name')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Contact</span>
+                      <ApperIcon 
+                        name={sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 'ChevronsUpDown'} 
+                        className="h-4 w-4" 
+                      />
+                    </div>
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('company')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Company</span>
+                      <ApperIcon 
+                        name={sortConfig.key === 'company' ? (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 'ChevronsUpDown'} 
+                        className="h-4 w-4" 
+                      />
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Contact Info
+                  </th>
+                  <th 
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                    onClick={() => handleSort('createdAt')}
+                  >
+                    <div className="flex items-center space-x-1">
+                      <span>Added</span>
+                      <ApperIcon 
+                        name={sortConfig.key === 'createdAt' ? (sortConfig.direction === 'asc' ? 'ChevronUp' : 'ChevronDown') : 'ChevronsUpDown'} 
+                        className="h-4 w-4" 
+                      />
+                    </div>
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {sortedContacts.map((contact) => (
+                  <tr key={contact.Id} className={`hover:bg-gray-50 ${selectedContacts.includes(contact.Id) ? 'bg-primary-50' : ''}`}>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <input
+                        type="checkbox"
+                        checked={selectedContacts.includes(contact.Id)}
+                        onChange={() => handleSelectContact(contact.Id)}
+                        className="rounded border-gray-300 focus:ring-primary-500"
+                      />
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center">
+                        <div className="flex-shrink-0 h-10 w-10">
+                          {contact.avatar ? (
+                            <img 
+                              src={contact.avatar} 
+                              alt={contact.name}
+                              className="h-10 w-10 rounded-full object-cover"
+                            />
+                          ) : (
+                            <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                              <span className="text-sm font-semibold text-white">
+                                {getInitials(contact.name)}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="ml-4">
+                          <div className="text-sm font-medium text-gray-900">{contact.name}</div>
+                          {contact.position && (
+                            <div className="text-sm text-gray-500">{contact.position}</div>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {contact.company || '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <div className="space-y-1">
+                        {contact.email && (
+                          <div className="flex items-center">
+                            <ApperIcon name="Mail" className="h-3 w-3 mr-2" />
+                            <a href={`mailto:${contact.email}`} className="text-primary-600 hover:text-primary-900">
+                              {contact.email}
+                            </a>
+                          </div>
+                        )}
+                        {contact.phone && (
+                          <div className="flex items-center">
+                            <ApperIcon name="Phone" className="h-3 w-3 mr-2" />
+                            <a href={`tel:${contact.phone}`} className="text-primary-600 hover:text-primary-900">
+                              {contact.phone}
+                            </a>
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {contact.createdAt ? format(new Date(contact.createdAt), "MMM d, yyyy") : '-'}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button
+                          onClick={() => setDetailModal({ isOpen: true, contact })}
+                          className="text-primary-600 hover:text-primary-900 p-1 rounded"
+                          title="View Details"
+                        >
+                          <ApperIcon name="Eye" className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            setSelectedContact(contact)
+                            setIsModalOpen(true)
+                          }}
+                          className="text-primary-600 hover:text-primary-900 p-1 rounded"
+                          title="Edit"
+                        >
+                          <ApperIcon name="Edit" className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(contact)}
+                          className="text-red-600 hover:text-red-900 p-1 rounded"
+                          title="Delete"
+                        >
+                          <ApperIcon name="Trash2" className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
+        /* Card View */
 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredContacts.map((contact) => (
+          {sortedContacts.map((contact) => (
             <div 
               key={contact.Id} 
               className={`card hover:shadow-lg transition-all duration-200 group relative ${selectedContacts.includes(contact.Id) ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
@@ -500,7 +706,7 @@ const getInitials = (name) => {
               >
               <div className="flex items-start justify-between">
                 <div className="flex items-center space-x-3 flex-1">
-<div className="relative">
+                <div className="relative">
                     {contact.avatar ? (
                       <img 
                         src={contact.avatar} 
@@ -544,6 +750,16 @@ const getInitials = (name) => {
                 </div>
                 
                 <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setDetailModal({ isOpen: true, contact })
+                    }}
+                    className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    title="View Details"
+                  >
+                    <ApperIcon name="Eye" className="h-4 w-4" />
+                  </button>
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
@@ -671,7 +887,7 @@ const getInitials = (name) => {
                 )}
               </div>
 
-{contact.tags && contact.tags.length > 0 && (
+              {contact.tags && contact.tags.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-1">
                   {contact.tags.slice(0, 2).map((tag, index) => (
                     <Badge key={index} variant="default" size="sm">
@@ -714,6 +930,249 @@ const getInitials = (name) => {
         }}
         onSave={handleContactSave}
       />
+
+      {/* Contact Detail Modal */}
+      {detailModal.isOpen && detailModal.contact && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div className="flex items-center justify-between p-6 border-b">
+              <h2 className="text-xl font-semibold">Contact Details</h2>
+              <button
+                onClick={() => setDetailModal({ isOpen: false, contact: null })}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <ApperIcon name="X" className="h-6 w-6" />
+              </button>
+            </div>
+            
+            <div className="p-6 max-h-96 overflow-y-auto">
+              <div className="flex items-start space-x-6 mb-6">
+                {/* Avatar */}
+                <div className="flex-shrink-0">
+                  {detailModal.contact.avatar ? (
+                    <img 
+                      src={detailModal.contact.avatar} 
+                      alt={detailModal.contact.name}
+                      className="w-20 h-20 rounded-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
+                      <span className="text-xl font-semibold text-white">
+                        {getInitials(detailModal.contact.name)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+                
+                {/* Basic Info */}
+                <div className="flex-1">
+                  <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                    {detailModal.contact.name}
+                  </h3>
+                  {detailModal.contact.position && detailModal.contact.company && (
+                    <p className="text-lg text-gray-600 mb-2">
+                      {detailModal.contact.position} at {detailModal.contact.company}
+                    </p>
+                  )}
+                  
+                  {/* Quick Actions */}
+                  <div className="flex items-center space-x-3 mt-4">
+                    {detailModal.contact.email && (
+                      <a
+                        href={`mailto:${detailModal.contact.email}`}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <ApperIcon name="Mail" className="h-4 w-4 mr-2" />
+                        Email
+                      </a>
+                    )}
+                    {detailModal.contact.phone && (
+                      <a
+                        href={`tel:${detailModal.contact.phone}`}
+                        className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                      >
+                        <ApperIcon name="Phone" className="h-4 w-4 mr-2" />
+                        Call
+                      </a>
+                    )}
+                    <button
+                      onClick={() => {
+                        setSelectedContact(detailModal.contact)
+                        setIsModalOpen(true)
+                        setDetailModal({ isOpen: false, contact: null })
+                      }}
+                      className="inline-flex items-center px-3 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-primary-600 hover:bg-primary-700"
+                    >
+                      <ApperIcon name="Edit" className="h-4 w-4 mr-2" />
+                      Edit
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Contact Information Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Contact Details */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">
+                    Contact Information
+                  </h4>
+                  <div className="space-y-3">
+                    {detailModal.contact.email && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Mail" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">{detailModal.contact.email}</p>
+                          <p className="text-xs text-gray-500">Email</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {detailModal.contact.phone && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Phone" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">{detailModal.contact.phone}</p>
+                          <p className="text-xs text-gray-500">Phone</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Organization Details */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">
+                    Organization
+                  </h4>
+                  <div className="space-y-3">
+                    {detailModal.contact.company && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Building2" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">{detailModal.contact.company}</p>
+                          <p className="text-xs text-gray-500">Company</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {detailModal.contact.position && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Briefcase" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">{detailModal.contact.position}</p>
+                          <p className="text-xs text-gray-500">Position</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Dates */}
+                <div>
+                  <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">
+                    Timeline
+                  </h4>
+                  <div className="space-y-3">
+                    {detailModal.contact.createdAt && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Calendar" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(detailModal.contact.createdAt), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                          <p className="text-xs text-gray-500">Added</p>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {detailModal.contact.lastContactedAt && (
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-shrink-0">
+                          <ApperIcon name="Clock" className="h-5 w-5 text-gray-400" />
+                        </div>
+                        <div>
+                          <p className="text-sm text-gray-900">
+                            {format(new Date(detailModal.contact.lastContactedAt), "MMM d, yyyy 'at' h:mm a")}
+                          </p>
+                          <p className="text-xs text-gray-500">Last Contact</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Tags */}
+                {detailModal.contact.tags && detailModal.contact.tags.length > 0 && (
+                  <div>
+                    <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">
+                      Tags
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {detailModal.contact.tags.map((tag, index) => (
+                        <Badge key={index} variant="default" size="sm">
+                          {tag}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Recent Activity */}
+              {contactActivities[detailModal.contact.Id] && contactActivities[detailModal.contact.Id].length > 0 && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <h4 className="text-sm font-medium text-gray-900 uppercase tracking-wide mb-3">
+                    Recent Activity
+                  </h4>
+                  <div className="space-y-3">
+                    {contactActivities[detailModal.contact.Id].slice(0, 3).map((activity) => (
+                      <div key={activity.Id} className="flex items-start space-x-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-primary-100 flex items-center justify-center">
+                            <ApperIcon 
+                              name={activity.type === 'deal' ? 'DollarSign' : activity.type === 'task' ? 'CheckSquare' : 'User'} 
+                              className="h-3 w-3 text-primary-600" 
+                            />
+                          </div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-gray-900">{activity.description}</p>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {new Date(activity.createdAt).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    
+                    {contactActivities[detailModal.contact.Id].length > 3 && (
+                      <button
+                        onClick={() => {
+                          setShowTimeline({ isOpen: true, contact: detailModal.contact })
+                          setDetailModal({ isOpen: false, contact: null })
+                        }}
+                        className="text-sm text-primary-600 hover:text-primary-900"
+                      >
+                        View all activities ({contactActivities[detailModal.contact.Id].length})
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Activity Timeline Modal */}
       {showTimeline.isOpen && showTimeline.contact && (
