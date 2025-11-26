@@ -3,12 +3,6 @@ import commentsData from '../mockData/comments.json'
 // Simulate network delay
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
-// Mock data store
-let comments = [...commentsData.map(comment => ({
-  ...comment,
-  topic: comment.topic || extractTopicFromContent(comment.content)
-}))]
-
 // Topic extraction utility
 const extractTopicFromContent = (content) => {
   // Extract hashtags
@@ -34,6 +28,12 @@ const extractTopicFromContent = (content) => {
   
   return 'general'
 }
+
+// Mock data store
+let comments = [...commentsData.map(comment => ({
+  ...comment,
+  topic: comment.topic || extractTopicFromContent(comment.content)
+}))]
 
 export const commentsService = {
   async getByTaskId(taskId) {
