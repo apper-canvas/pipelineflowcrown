@@ -53,9 +53,51 @@ export const dealService = {
     return { ...updatedDeal }
   },
 
-  async delete(id) {
+async delete(id) {
     await delay(200)
     deals = deals.filter(d => d.Id !== parseInt(id))
     return true
+  },
+
+  async bulkUpdateStage(dealIds, stage) {
+    await delay(400)
+    dealIds.forEach(id => {
+      const index = deals.findIndex(d => d.Id === parseInt(id))
+      if (index !== -1) {
+        deals[index] = {
+          ...deals[index],
+          stage,
+          updatedAt: new Date().toISOString()
+        }
+      }
+    })
+    return true
+  },
+
+  async getByStage(stage) {
+    await delay(300)
+    return deals.filter(d => d.stage === stage)
+  },
+
+  async getPipelineMetrics() {
+    await delay(200)
+    const totalValue = deals.reduce((sum, deal) => sum + (parseFloat(deal.amount) || 0), 0)
+    const weightedValue = deals.reduce((sum, deal) => {
+      const amount = parseFloat(deal.amount) || 0
+      const probability = parseInt(deal.probability) || 0
+      return sum + (amount * (probability / 100))
+    }, 0)
+    
+    const stageDistribution = deals.reduce((acc, deal) => {
+      acc[deal.stage] = (acc[deal.stage] || 0) + 1
+      return acc
+    }, {})
+
+    return {
+      totalValue,
+      weightedValue,
+      totalDeals: deals.length,
+      stageDistribution
+    }
   }
 }
