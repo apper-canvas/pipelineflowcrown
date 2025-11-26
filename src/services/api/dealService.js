@@ -5,9 +5,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 let deals = [...dealsData]
 
 export const dealService = {
-  async getAll() {
+async getAll() {
     await delay(400)
     return [...deals]
+  },
+
+  async getByAssignee(assigneeId) {
+    await delay(400)
+    return deals.filter(d => d.dealOwner === parseInt(assigneeId))
   },
 
   async getById(id) {
@@ -27,6 +32,8 @@ const newDeal = {
       Id: Math.max(...deals.map(d => d.Id)) + 1,
       amount: parseFloat(dealData.amount) || 0,
       probability: parseInt(dealData.probability) || 25,
+      dealOwner: dealData.dealOwner || null,
+      assignedAt: dealData.dealOwner ? now : null,
       createdAt: now,
       updatedAt: now,
       stageChangedAt: dealData.stageChangedAt || now,
@@ -50,12 +57,17 @@ async update(id, dealData) {
     const now = new Date().toISOString()
     const currentDeal = deals[index]
     
-const updatedDeal = {
+const previousOwner = currentDeal.dealOwner
+    const newOwner = dealData.dealOwner
+    
+    const updatedDeal = {
       ...currentDeal,
       ...dealData,
       Id: parseInt(id),
       amount: parseFloat(dealData.amount) || currentDeal.amount,
       probability: parseInt(dealData.probability) || currentDeal.probability,
+      dealOwner: newOwner || null,
+      assignedAt: (newOwner && newOwner !== previousOwner) ? now : currentDeal.assignedAt,
       updatedAt: now
     }
     
@@ -63,7 +75,7 @@ const updatedDeal = {
     return { ...updatedDeal }
   },
 
-  async updateStage(id, newStage) {
+async updateStage(id, newStage) {
     await delay(350)
     const index = deals.findIndex(d => d.Id === parseInt(id))
     if (index === -1) {
@@ -95,7 +107,7 @@ const updatedDeal = {
       duration: 0
     })
     
-const updatedDeal = {
+    const updatedDeal = {
       ...currentDeal,
       stage: newStage,
       stageChangedAt: now,

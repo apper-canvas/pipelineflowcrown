@@ -4,14 +4,15 @@ import Loading from "@/components/ui/Loading";
 import Layout from "@/components/organisms/Layout";
 
 const Dashboard = lazy(() => import("@/components/pages/Dashboard"));
-const Contacts = lazy(() => import("@/components/pages/Contacts"));
-const Leads = lazy(() => import("@/components/pages/Leads"));
-const Deals = lazy(() => import("@/components/pages/Deals"));
+const Analytics = lazy(() => import("@/components/pages/Analytics"));
 const Tasks = lazy(() => import("@/components/pages/Tasks"));
 const CalendarView = lazy(() => import("@/components/pages/CalendarView"));
-const Analytics = lazy(() => import("@/components/pages/Analytics"));
+const Contacts = lazy(() => import("@/components/pages/Contacts"));
+const Leads = lazy(() => import("@/components/pages/Leads"));
 const NotFound = lazy(() => import("@/components/pages/NotFound"));
+const Deals = lazy(() => import("@/components/pages/Deals"));
 const Activities = lazy(() => import("@/components/pages/Activities"));
+const MyAssignments = lazy(() => import("@/components/pages/MyAssignments"));
 
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-100 dark:from-slate-900 dark:to-slate-800">
@@ -24,6 +25,7 @@ const LoadingFallback = () => (
     </div>
   </div>
 );
+
 const mainRoutes = [
   {
     path: "",
@@ -59,14 +61,6 @@ const mainRoutes = [
     )
   },
   {
-    path: "tasks",
-    element: (
-      <Suspense fallback={<LoadingFallback />}>
-        <Tasks />
-      </Suspense>
-    )
-  },
-  {
     path: "activities",
     element: (
       <Suspense fallback={<LoadingFallback />}>
@@ -74,7 +68,7 @@ const mainRoutes = [
       </Suspense>
     )
   },
-{
+  {
     path: "calendar",
     element: (
       <Suspense fallback={<LoadingFallback />}>
@@ -91,6 +85,22 @@ const mainRoutes = [
     )
   },
   {
+    path: "tasks",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <Tasks />
+      </Suspense>
+    )
+  },
+  {
+    path: "my-assignments",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <MyAssignments />
+      </Suspense>
+    )
+  },
+  {
     path: "*",
     element: (
       <Suspense fallback={<LoadingFallback />}>
@@ -98,7 +108,7 @@ const mainRoutes = [
       </Suspense>
     )
   }
-]
+];
 
 const routes = [
   {
@@ -106,6 +116,6 @@ const routes = [
     element: <Layout />,
     children: [...mainRoutes]
   }
-]
+];
 
-export const router = createBrowserRouter(routes)
+export const router = createBrowserRouter(routes);

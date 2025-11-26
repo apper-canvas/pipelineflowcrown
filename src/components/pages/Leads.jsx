@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { leadService } from "@/services/api/leadService";
 import { format } from "date-fns";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -12,7 +14,7 @@ import Badge from "@/components/atoms/Badge";
 
 const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
 const [formData, setFormData] = useState({
-    title: "",
+title: "",
     company: "",
     contactName: "",
     email: "",
@@ -22,7 +24,8 @@ const [formData, setFormData] = useState({
     timeline: "",
     source: "website",
     stage: "new",
-notes: "",
+    notes: "",
+    assignedTo: null,
     qualification: {
       budget: false,
       authority: false,
@@ -37,7 +40,7 @@ notes: "",
 
 useEffect(() => {
     if (lead) {
-      setFormData({
+setFormData({
         title: lead.title || "",
         company: lead.company || "",
         contactName: lead.contactName || "",
@@ -47,8 +50,9 @@ useEffect(() => {
         budget: lead.budget || "",
         timeline: lead.timeline || "",
         source: lead.source || "website",
-stage: lead.stage || "new",
+        stage: lead.stage || "new",
         notes: lead.notes || "",
+        assignedTo: lead.assignedTo || null,
         qualification: lead.qualification || {
           budget: false,
           authority: false,
@@ -61,7 +65,7 @@ stage: lead.stage || "new",
       })
     } else {
       setFormData({
-        title: "",
+title: "",
         company: "",
         contactName: "",
         email: "",
@@ -71,7 +75,8 @@ stage: lead.stage || "new",
         timeline: "",
         source: "website",
         stage: "new",
-notes: "",
+        notes: "",
+        assignedTo: null,
         qualification: {
           budget: false,
           authority: false,
@@ -235,7 +240,18 @@ if (!formData.title.trim() || !formData.company.trim()) {
                 <option value="nurturing">Nurturing</option>
                 <option value="converted">Converted</option>
                 <option value="lost">Lost</option>
-              </select>
+</select>
+            </div>
+            
+            <div className="space-y-1">
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                Assigned To
+              </label>
+              <AssigneeSelector
+                value={formData.assignedTo}
+                onChange={(value) => setFormData({...formData, assignedTo: value})}
+                placeholder="Assign to sales rep..."
+              />
             </div>
           </div>
 
@@ -485,7 +501,7 @@ return (
         ))}
       </div>
 
-{/* Leads Display */}
+      {/* Leads Display */}
       {filteredLeads.length === 0 ? (
         <Empty 
           icon="UserPlus"
@@ -513,21 +529,28 @@ return (
             }
 
             return (
-              <div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
+<div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <div className="flex items-center space-x-2 mb-2">
-                      <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
-                      <Badge variant="default" size="sm">
-                        {getStageLabel(lead.stage)}
-                      </Badge>
-                      {lead.source && (
-                        <Badge variant="outline" size="sm" className="text-xs">
-                          {getSourceLabel(lead.source)}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center space-x-2">
+                        <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
+                        <Badge variant="default" size="sm">
+                          {getStageLabel(lead.stage)}
                         </Badge>
+                        {lead.source && (
+                          <Badge variant="outline" size="sm" className="text-xs">
+                            {getSourceLabel(lead.source)}
+                          </Badge>
+                        )}
+                      </div>
+                      {lead.assignedTo && (
+                        <AssigneeDisplay 
+                          assigneeId={lead.assignedTo} 
+                          size="sm" 
+                        />
                       )}
                     </div>
-                    
                     {/* Lead Score Badge */}
                     <div className="flex items-center space-x-2 mb-3">
                       <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getScoreColor(lead.score || 0)}`}>

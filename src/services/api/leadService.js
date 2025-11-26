@@ -114,9 +114,14 @@ function addScoreHistory(lead, newScore, reason = 'Score updated') {
   return scoreHistory;
 }
 export const leadService = {
-  async getAll() {
+async getAll() {
     await delay(350)
     return [...leads]
+  },
+
+  async getByAssignee(assigneeId) {
+    await delay(350)
+    return leads.filter(l => l.assignedTo === parseInt(assigneeId))
   },
 
   async getById(id) {
@@ -141,7 +146,7 @@ async create(leadData) {
     }
     
     const now = new Date().toISOString();
-    const newLead = {
+const newLead = {
       ...leadData,
       Id: Math.max(...leads.map(l => l.Id), 0) + 1,
       stage: leadData.stage || 'new',
@@ -149,7 +154,9 @@ async create(leadData) {
       value: leadData.value ? parseFloat(leadData.value) : null,
       budget: leadData.budget ? parseFloat(leadData.budget) : null,
       timeline: leadData.timeline || null,
-createdAt: now,
+      assignedTo: leadData.assignedTo || null,
+      assignedAt: leadData.assignedTo ? now : null,
+      createdAt: now,
       updatedAt: now,
       qualification: leadData.qualification || {
         budget: false,
@@ -183,13 +190,19 @@ async update(id, leadData) {
     }
     
     const previousLead = leads[index];
+const previousAssignee = previousLead.assignedTo
+    const newAssignee = leadData.assignedTo
+    const now = new Date().toISOString()
+    
     const updatedLead = {
       ...previousLead,
       ...leadData,
       Id: parseInt(id),
       value: leadData.value ? parseFloat(leadData.value) : previousLead.value,
       budget: leadData.budget ? parseFloat(leadData.budget) : previousLead.budget,
-timeline: leadData.timeline || previousLead.timeline,
+      timeline: leadData.timeline || previousLead.timeline,
+      assignedTo: newAssignee || null,
+      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : previousLead.assignedAt,
       qualification: leadData.qualification || previousLead.qualification || {
         budget: false,
         authority: false,
@@ -199,7 +212,7 @@ timeline: leadData.timeline || previousLead.timeline,
         competition: false,
         fit: false
       },
-      updatedAt: new Date().toISOString()
+      updatedAt: now
     }
     
     // Recalculate score

@@ -5,9 +5,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 let activities = [...activitiesData]
 
 export const activityService = {
-  async getAll() {
+async getAll() {
     await delay(300)
     return [...activities]
+  },
+
+  async getByAssignee(assigneeId) {
+    await delay(300)
+    return activities.filter(a => a.assignedTo === parseInt(assigneeId))
   },
 
   async getRecent(limit = 10) {
@@ -20,9 +25,11 @@ export const activityService = {
 async create(activityData) {
     await delay(200)
     const now = new Date().toISOString()
-    const newActivity = {
+const newActivity = {
       ...activityData,
       Id: Math.max(...activities.map(a => a.Id)) + 1,
+      assignedTo: activityData.assignedTo || null,
+      assignedAt: activityData.assignedTo ? now : null,
       createdAt: now,
       updatedAt: now,
       // Type-specific field defaults
@@ -44,13 +51,18 @@ async create(activityData) {
       throw new Error("Activity not found")
     }
     
+const now = new Date().toISOString()
+    const previousAssignee = activities[index].assignedTo
+    const newAssignee = activityData.assignedTo
+    
     const updatedActivity = {
       ...activities[index],
       ...activityData,
       Id: parseInt(id),
-      updatedAt: new Date().toISOString()
+      assignedTo: newAssignee || null,
+      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : activities[index].assignedAt,
+      updatedAt: now
     }
-    
     activities[index] = updatedActivity
     return { ...updatedActivity }
   },
@@ -99,7 +111,7 @@ async create(activityData) {
       .slice(0, limit)
   },
 
-  async search(query, filters = {}) {
+async search(query, filters = {}) {
     await delay(300)
     let filtered = [...activities]
     

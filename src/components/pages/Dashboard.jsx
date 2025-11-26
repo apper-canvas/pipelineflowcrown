@@ -1,14 +1,15 @@
-import React, { useState, useEffect } from "react"
-import { useNavigate } from "react-router-dom"
-import StatCard from "@/components/molecules/StatCard"
-import Loading from "@/components/ui/Loading"
-import ErrorView from "@/components/ui/ErrorView"
-import Empty from "@/components/ui/Empty"
-import ApperIcon from "@/components/ApperIcon"
-import Badge from "@/components/atoms/Badge"
-import { dashboardService } from "@/services/api/dashboardService"
-import { activityService } from "@/services/api/activityService"
-import { format } from "date-fns"
+import React, { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { dashboardService } from "@/services/api/dashboardService";
+import { activityService } from "@/services/api/activityService";
+import { format } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
+import Loading from "@/components/ui/Loading";
+import ErrorView from "@/components/ui/ErrorView";
+import Empty from "@/components/ui/Empty";
+import Badge from "@/components/atoms/Badge";
+import StatCard from "@/components/molecules/StatCard";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 
 const Dashboard = () => {
   const navigate = useNavigate()
@@ -121,9 +122,17 @@ const Dashboard = () => {
                       />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-slate-900 dark:text-slate-100">
-                        <span className="font-medium">{activity.userName}</span> {activity.description}
-                      </p>
+<div className="flex items-center justify-between">
+                        <p className="text-sm text-slate-900 dark:text-slate-100">
+                          <span className="font-medium">{activity.userName}</span> {activity.description}
+                        </p>
+                        {activity.assignedTo && (
+                          <AssigneeDisplay 
+                            assigneeId={activity.assignedTo} 
+                            size="xs" 
+                          />
+                        )}
+                      </div>
                       <div className="flex items-center space-x-2 mt-1">
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           {format(new Date(activity.createdAt), "MMM d, h:mm a")}

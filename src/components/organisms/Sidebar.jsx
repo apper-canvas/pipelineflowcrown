@@ -4,12 +4,13 @@ import ApperIcon from "@/components/ApperIcon"
 import { cn } from "@/utils/cn"
 
 const Sidebar = ({ isCollapsed = false, onToggle }) => {
-  const navigationItems = [
+const navigationItems = [
     { name: "Dashboard", href: "", icon: "LayoutDashboard" },
     { name: "Contacts", href: "contacts", icon: "Users" },
     { name: "Leads", href: "leads", icon: "UserPlus" },
     { name: "Deals", href: "deals", icon: "Target" },
     { name: "Tasks", href: "tasks", icon: "CheckSquare" },
+    { name: "My Assignments", href: "my-assignments", icon: "UserCheck" },
     { name: "Analytics", href: "analytics", icon: "BarChart3" }
   ]
 

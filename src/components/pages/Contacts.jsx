@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { contactService } from "@/services/api/contactService";
 import { format } from "date-fns";
+import { activityService } from "@/services/api/activityService";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -11,7 +14,6 @@ import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 import SearchBar from "@/components/molecules/SearchBar";
-import { activityService } from "@/services/api/activityService";
 const ContactModal = ({ isOpen, contact, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     name: "",
@@ -19,9 +21,10 @@ const ContactModal = ({ isOpen, contact, onClose, onSave }) => {
     phone: "",
     company: "",
     position: "",
-    tags: []
-  })
-  const [saving, setSaving] = useState(false)
+tags: [],
+    assignedTo: null
+  });
+const [saving, setSaving] = useState(false);
 
 useEffect(() => {
     if (contact) {
@@ -31,8 +34,9 @@ useEffect(() => {
         phone: contact.phone || "",
         company: contact.company || "",
         position: contact.position || "",
-        tags: contact.tags || []
-      })
+        tags: contact.tags || [],
+        assignedTo: contact.assignedTo || null
+      });
     } else {
       setFormData({
         name: "",
@@ -40,37 +44,38 @@ useEffect(() => {
         phone: "",
         company: "",
         position: "",
+        assignedTo: null,
         tags: []
-      })
+      });
     }
-  }, [contact])
+  }, [contact]);
 
 const handleSubmit = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
     
     // Validate required fields
     if (!formData.name.trim()) {
-      toast.error("Name is required")
-      return
+      toast.error("Name is required");
+      return;
     }
 
-    setSaving(true)
+    setSaving(true);
     try {
       const savedContact = contact
         ? await contactService.update(contact.Id, formData)
-        : await contactService.create(formData)
+        : await contactService.create(formData);
       
-      onSave(savedContact)
-      toast.success(contact ? "Contact updated successfully" : "Contact created successfully")
-      onClose()
+      onSave(savedContact);
+      toast.success(contact ? "Contact updated successfully" : "Contact created successfully");
+      onClose();
     } catch (error) {
-      toast.error(error.message || "Failed to save contact")
+      toast.error(error.message || "Failed to save contact");
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }
+  };
 
-  if (!isOpen) return null
+if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -117,11 +122,22 @@ const handleSubmit = async (e) => {
               placeholder="Acme Inc."
             />
             
-            <Input
+<Input
               label="Job Title"
               value={formData.position}
               onChange={(e) => setFormData({...formData, position: e.target.value})}
               placeholder="Sales Manager"
+            />
+          </div>
+          
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Assigned To
+            </label>
+            <AssigneeSelector
+              value={formData.assignedTo}
+              onChange={(value) => setFormData({...formData, assignedTo: value})}
+              placeholder="Assign to team member..."
             />
           </div>
           
@@ -140,11 +156,11 @@ const handleSubmit = async (e) => {
         </form>
       </div>
     </div>
-  )
-}
+);
+};
 
 const DeleteConfirmModal = ({ isOpen, contactName, onClose, onConfirm, isDeleting }) => {
-  if (!isOpen) return null
+  if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -181,238 +197,256 @@ const DeleteConfirmModal = ({ isOpen, contactName, onClose, onConfirm, isDeletin
           </div>
         </div>
       </div>
-    </div>
-  )
-}
+</div>
+  );
+};
 
 const Contacts = () => {
-  const navigate = useNavigate()
-const [contacts, setContacts] = useState([])
-  const [filteredContacts, setFilteredContacts] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [selectedContact, setSelectedContact] = useState(null)
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null })
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [expandedContact, setExpandedContact] = useState(null)
-  const [selectedContacts, setSelectedContacts] = useState([])
-  const [contactActivities, setContactActivities] = useState({})
-  const [showTimeline, setShowTimeline] = useState({ isOpen: false, contact: null })
-  const [showAvatarUpload, setShowAvatarUpload] = useState({ isOpen: false, contact: null })
-  const [isExporting, setIsExporting] = useState(false)
-  const [viewMode, setViewMode] = useState('cards') // 'cards' or 'table'
-  const [detailModal, setDetailModal] = useState({ isOpen: false, contact: null })
-  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' })
-  useEffect(() => {
-loadContacts()
-  }, [])
-
+  const navigate = useNavigate();
+  const [contacts, setContacts] = useState([]);
+  const [filteredContacts, setFilteredContacts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [deleteModal, setDeleteModal] = useState({ isOpen: false, contact: null });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [expandedContact, setExpandedContact] = useState(null);
+  const [selectedContacts, setSelectedContacts] = useState([]);
+  const [contactActivities, setContactActivities] = useState({});
+  const [showTimeline, setShowTimeline] = useState({ isOpen: false, contact: null });
+  const [showAvatarUpload, setShowAvatarUpload] = useState({ isOpen: false, contact: null });
+  const [isExporting, setIsExporting] = useState(false);
+  const [viewMode, setViewMode] = useState('cards'); // 'cards' or 'table'
+  const [detailModal, setDetailModal] = useState({ isOpen: false, contact: null });
+  const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
+  const [assigneeFilter, setAssigneeFilter] = useState("");
 useEffect(() => {
-    if (searchTerm) {
-      setFilteredContacts(
-        contacts.filter(contact =>
-          contact.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          contact.phone?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    } else {
-      setFilteredContacts(contacts)
+    loadContacts();
+  }, []);
+const applyFilters = () => {
+    let filtered = [...contacts];
+
+    // Search filter
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase();
+      filtered = filtered.filter(contact => 
+        contact.name?.toLowerCase().includes(term) ||
+        contact.email?.toLowerCase().includes(term) ||
+        contact.company?.toLowerCase().includes(term) ||
+        contact.phone?.toLowerCase().includes(term) ||
+        contact.position?.toLowerCase().includes(term)
+      );
     }
-  }, [contacts, searchTerm])
+
+    // Assignee filter
+    if (assigneeFilter === "current-user") {
+      // Note: teamMemberService would need to be imported and implemented
+      // const currentUser = teamMemberService.getCurrentUser();
+      // filtered = filtered.filter(contact => contact.assignedTo === currentUser.Id);
+    } else if (assigneeFilter === "unassigned") {
+      filtered = filtered.filter(contact => !contact.assignedTo);
+    }
+
+    setFilteredContacts(filtered);
+  };
+
+  useEffect(() => {
+    applyFilters();
+  }, [contacts, searchTerm, assigneeFilter]);
+
 
   // Load activities for all contacts
+// Load activities for all contacts
   useEffect(() => {
     const loadActivities = async () => {
       try {
-        const activities = await activityService.getAll()
+        const activities = await activityService.getAll();
         const activitiesByContact = activities.reduce((acc, activity) => {
           if (activity.contactId) {
             if (!acc[activity.contactId]) {
-              acc[activity.contactId] = []
+              acc[activity.contactId] = [];
             }
-            acc[activity.contactId].push(activity)
+            acc[activity.contactId].push(activity);
           }
-          return acc
-        }, {})
-        setContactActivities(activitiesByContact)
+          return acc;
+        }, {});
+        setContactActivities(activitiesByContact);
       } catch (error) {
-        console.error('Failed to load activities:', error)
+        console.error('Failed to load activities:', error);
       }
-    }
-    loadActivities()
-  }, [])
+    };
+    loadActivities();
+  }, []);
 
 const loadContacts = async () => {
     try {
-      setLoading(true)
-      setError("")
-      const data = await contactService.getAll()
-      setContacts(data)
+      setLoading(true);
+      setError("");
+      const data = await contactService.getAll();
+      setContacts(data);
     } catch (err) {
-      setError("Failed to load contacts")
+      setError("Failed to load contacts");
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
+
 
 const handleContactSave = (savedContact) => {
     if (selectedContact) {
-      setContacts(contacts.map(c => c.Id === savedContact.Id ? savedContact : c))
+      setContacts(contacts.map(c => c.Id === savedContact.Id ? savedContact : c));
     } else {
-      setContacts([savedContact, ...contacts])
+      setContacts([savedContact, ...contacts]);
     }
-  }
+  };
 
 const handleDelete = (contact) => {
-    setDeleteModal({ isOpen: true, contact })
-  }
-
-  const confirmDelete = async () => {
-    if (!deleteModal.contact) return
+    setDeleteModal({ isOpen: true, contact });
+  };
+const confirmDelete = async () => {
+    if (!deleteModal.contact) return;
     
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await contactService.delete(deleteModal.contact.Id)
-      setContacts(contacts.filter(c => c.Id !== deleteModal.contact.Id))
-      toast.success("Contact deleted successfully")
-      setDeleteModal({ isOpen: false, contact: null })
+      await contactService.delete(deleteModal.contact.Id);
+      setContacts(contacts.filter(c => c.Id !== deleteModal.contact.Id));
+      toast.success("Contact deleted successfully");
+      setDeleteModal({ isOpen: false, contact: null });
     } catch (error) {
-      toast.error(error.message || "Failed to delete contact")
+      toast.error(error.message || "Failed to delete contact");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
-  const handleBulkDelete = async () => {
-    if (selectedContacts.length === 0) return
+const handleBulkDelete = async () => {
+    if (selectedContacts.length === 0) return;
     
     if (!confirm(`Are you sure you want to delete ${selectedContacts.length} contact(s)?`)) {
-      return
+      return;
     }
 
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      await contactService.bulkDelete(selectedContacts)
-      setContacts(contacts.filter(c => !selectedContacts.includes(c.Id)))
-      toast.success(`${selectedContacts.length} contact(s) deleted successfully`)
-      setSelectedContacts([])
+      await contactService.bulkDelete(selectedContacts);
+      setContacts(contacts.filter(c => !selectedContacts.includes(c.Id)));
+      toast.success(`${selectedContacts.length} contact(s) deleted successfully`);
+      setSelectedContacts([]);
     } catch (error) {
-      toast.error(error.message || "Failed to delete contacts")
+      toast.error(error.message || "Failed to delete contacts");
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
-  const handleSelectContact = (contactId) => {
+
+const handleSelectContact = (contactId) => {
     setSelectedContacts(prev => 
       prev.includes(contactId)
         ? prev.filter(id => id !== contactId)
         : [...prev, contactId]
-    )
-  }
+    );
+  };
 
-  const handleSelectAll = () => {
+const handleSelectAll = () => {
     if (selectedContacts.length === filteredContacts.length) {
-      setSelectedContacts([])
+      setSelectedContacts([]);
     } else {
-      setSelectedContacts(filteredContacts.map(c => c.Id))
+      setSelectedContacts(filteredContacts.map(c => c.Id));
     }
-  }
-
-  const handleExportCsv = async () => {
-    setIsExporting(true)
+  };
+const handleExportCsv = async () => {
+    setIsExporting(true);
     try {
-      const csvData = await contactService.exportToCsv()
-      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' })
-      const link = document.createElement('a')
-      const url = URL.createObjectURL(blob)
-      link.setAttribute('href', url)
-      link.setAttribute('download', `contacts-${new Date().toISOString().split('T')[0]}.csv`)
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      toast.success('Contacts exported successfully')
+      const csvData = await contactService.exportToCsv();
+      const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `contacts-${new Date().toISOString().split('T')[0]}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toast.success('Contacts exported successfully');
     } catch (error) {
-      toast.error(error.message || 'Failed to export contacts')
+      toast.error(error.message || 'Failed to export contacts');
     } finally {
-      setIsExporting(false)
+      setIsExporting(false);
     }
-  }
+  };
 
-  const handleAvatarUpload = async (contactId, file) => {
-    if (!file) return
+const handleAvatarUpload = async (contactId, file) => {
+    if (!file) return;
 
     try {
-      const reader = new FileReader()
+      const reader = new FileReader();
       reader.onload = async (e) => {
         try {
-          await contactService.updateAvatar(contactId, e.target.result)
-          const updatedContacts = await contactService.getAll()
-          setContacts(updatedContacts)
-          toast.success('Profile picture updated successfully')
-          setShowAvatarUpload({ isOpen: false, contact: null })
+          await contactService.updateAvatar(contactId, e.target.result);
+          const updatedContacts = await contactService.getAll();
+          setContacts(updatedContacts);
+          toast.success('Profile picture updated successfully');
+          setShowAvatarUpload({ isOpen: false, contact: null });
         } catch (error) {
-          toast.error(error.message || 'Failed to update profile picture')
+          toast.error(error.message || 'Failed to update profile picture');
         }
-      }
-      reader.readAsDataURL(file)
+      };
+      reader.readAsDataURL(file);
     } catch (error) {
-      toast.error('Failed to process image file')
+      toast.error('Failed to process image file');
     }
-  }
+  };
+
 
 const getInitials = (name) => {
-    if (!name) return "??"
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-  }
+    if (!name) return "??";
+    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+  };
 
-  const handleSort = (key) => {
-    let direction = 'asc'
+const handleSort = (key) => {
+    let direction = 'asc';
     if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc'
+      direction = 'desc';
     }
-    setSortConfig({ key, direction })
-  }
-
-  const sortedContacts = React.useMemo(() => {
-    let sortableContacts = [...filteredContacts]
+    setSortConfig({ key, direction });
+  };
+const sortedContacts = React.useMemo(() => {
+    let sortableContacts = [...filteredContacts];
     if (sortConfig.key) {
       sortableContacts.sort((a, b) => {
         if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? -1 : 1
+          return sortConfig.direction === 'asc' ? -1 : 1;
         }
         if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? 1 : -1
+          return sortConfig.direction === 'asc' ? 1 : -1;
         }
-        return 0
-      })
+        return 0;
+      });
     }
-    return sortableContacts
-  }, [filteredContacts, sortConfig])
+    return sortableContacts;
+  }, [filteredContacts, sortConfig]);
 
-  if (loading) return <Loading type="skeleton" />
-  if (error) return <ErrorView message={error} onRetry={loadContacts} />
 
   return (
     <div className="space-y-6">
-{/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-4 sm:space-y-0">
         <div>
+if (loading) return <Loading type="skeleton" />;
+  if (error) return <ErrorView message={error} onRetry={loadContacts} />;
           <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Contacts</h1>
           <p className="text-slate-600 dark:text-slate-400 mt-1">
             Manage your customer relationships and contact information.
           </p>
+{/* Header */}
         </div>
-<div className="flex items-center space-x-2">
           {/* View Toggle */}
           <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('cards')}
               className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
+<div className="flex items-center space-x-2">
                 viewMode === 'cards' 
                   ? 'bg-white text-gray-900 shadow-sm' 
                   : 'text-gray-600 hover:text-gray-900'
@@ -455,17 +489,21 @@ const getInitials = (name) => {
       </div>
 
       {/* Search and Filters */}
-<div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         <div className="flex-1">
           <SearchBar
             placeholder="Search contacts by name, company, email, or phone..."
             onSearch={setSearchTerm}
           />
+<div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4">
         </div>
-        <select className="input-field w-full sm:w-auto">
-          <option>All Contacts</option>
-          <option>Recent Contacts</option>
-          <option>My Contacts</option>
+          className="input-field w-full sm:w-auto"
+          value={assigneeFilter}
+          onChange={(e) => setAssigneeFilter(e.target.value)}
+        >
+          <option value="">All Contacts</option>
+<select
+          <option value="current-user">My Contacts</option>
+          <option value="unassigned">Unassigned</option>
         </select>
       </div>
 
@@ -514,13 +552,13 @@ const getInitials = (name) => {
         </div>
       )}
 
-{/* Contacts Display */}
       {sortedContacts.length === 0 ? (
         <Empty 
           icon="Users"
           title={searchTerm ? "No contacts found" : "No contacts yet"}
           message={searchTerm ? "Try adjusting your search terms." : "Start building your customer database by adding your first contact."}
           actionLabel="Add Contact"
+{/* Contacts Display */}
           onAction={() => {
             setSelectedContact(null)
             setIsModalOpen(true)
@@ -597,13 +635,13 @@ const getInitials = (name) => {
                       />
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
                         <div className="flex-shrink-0 h-10 w-10">
                           {contact.avatar ? (
                             <img 
                               src={contact.avatar} 
                               alt={contact.name}
                               className="h-10 w-10 rounded-full object-cover"
+<div className="flex items-center">
                             />
                           ) : (
                             <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
@@ -613,11 +651,21 @@ const getInitials = (name) => {
                             </div>
                           )}
                         </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{contact.name}</div>
-                          {contact.position && (
-                            <div className="text-sm text-gray-500">{contact.position}</div>
-                          )}
+                        <div className="ml-4 flex-1">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">{contact.name}</div>
+                              {contact.position && (
+                                <div className="text-sm text-gray-500">{contact.position}</div>
+                              )}
+                            </div>
+                            {contact.assignedTo && (
+                              <AssigneeDisplay 
+                                assigneeId={contact.assignedTo} 
+                                size="sm" 
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                     </td>
@@ -683,13 +731,13 @@ const getInitials = (name) => {
         </div>
       ) : (
         /* Card View */
-<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {sortedContacts.map((contact) => (
             <div 
               key={contact.Id} 
               className={`card hover:shadow-lg transition-all duration-200 group relative ${selectedContacts.includes(contact.Id) ? 'ring-2 ring-primary-500 bg-primary-50' : ''}`}
             >
               {/* Selection Checkbox */}
+<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               <div className="absolute top-4 left-4 z-10">
                 <input
                   type="checkbox"
@@ -705,13 +753,13 @@ const getInitials = (name) => {
                 onClick={() => setExpandedContact(expandedContact === contact.Id ? null : contact.Id)}
               >
               <div className="flex items-start justify-between">
-                <div className="flex items-center space-x-3 flex-1">
-                <div className="relative">
+                  <div className="relative">
                     {contact.avatar ? (
                       <img 
                         src={contact.avatar} 
                         alt={contact.name}
                         className="h-12 w-12 rounded-full object-cover"
+<div className="flex items-center space-x-3 flex-1">
                       />
                     ) : (
                       <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center">
@@ -731,9 +779,17 @@ const getInitials = (name) => {
                     </button>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                      {contact.name}
-                    </h3>
+                    <div className="flex items-center justify-between mb-1">
+                      <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                        {contact.name}
+                      </h3>
+                      {contact.assignedTo && (
+                        <AssigneeDisplay 
+                          assigneeId={contact.assignedTo} 
+                          size="sm" 
+                        />
+                      )}
+                    </div>
                     {contact.position && contact.company && (
                       <p className="text-sm text-slate-600 dark:text-slate-400 truncate">
                         {contact.position} at {contact.company}
@@ -920,13 +976,13 @@ const getInitials = (name) => {
         </div>
       )}
 
-{/* Contact Modal */}
       <ContactModal
         isOpen={isModalOpen}
         contact={selectedContact}
         onClose={() => {
           setIsModalOpen(false)
           setSelectedContact(null)
+{/* Contact Modal */}
         }}
         onSave={handleContactSave}
       />
@@ -944,7 +1000,6 @@ const getInitials = (name) => {
                 <ApperIcon name="X" className="h-6 w-6" />
               </button>
             </div>
-            
             <div className="p-6 max-h-96 overflow-y-auto">
               <div className="flex items-start space-x-6 mb-6">
                 {/* Avatar */}
@@ -1293,13 +1348,12 @@ const getInitials = (name) => {
       {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={deleteModal.isOpen}
+);
+};
         contactName={deleteModal.contact?.name}
         onClose={() => setDeleteModal({ isOpen: false, contact: null })}
+export default Contacts;
         onConfirm={confirmDelete}
         isDeleting={isDeleting}
       />
     </div>
-)
-}
-
-export default Contacts

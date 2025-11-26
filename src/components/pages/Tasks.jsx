@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react"
-import { toast } from "react-toastify"
-import Loading from "@/components/ui/Loading"
-import ErrorView from "@/components/ui/ErrorView"
-import Empty from "@/components/ui/Empty"
-import ApperIcon from "@/components/ApperIcon"
-import Badge from "@/components/atoms/Badge"
-import Button from "@/components/atoms/Button"
-import Input from "@/components/atoms/Input"
-import { taskService } from "@/services/api/taskService"
-import { contactService } from "@/services/api/contactService"
-import { format, isToday, isTomorrow, isPast } from "date-fns"
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { taskService } from "@/services/api/taskService";
+import { contactService } from "@/services/api/contactService";
+import { format, isPast, isToday, isTomorrow } from "date-fns";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
+import ApperIcon from "@/components/ApperIcon";
+import Loading from "@/components/ui/Loading";
+import ErrorView from "@/components/ui/ErrorView";
+import Empty from "@/components/ui/Empty";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Badge from "@/components/atoms/Badge";
 
 const TaskModal = ({ isOpen, task, onClose, onSave }) => {
 const [formData, setFormData] = useState({
@@ -19,7 +21,7 @@ const [formData, setFormData] = useState({
     priority: "medium",
     status: "not-started",
     category: "follow-up",
-    assignedTo: "current-user",
+assignedTo: null,
     relatedTo: "",
     relatedType: "contact",
     recurrenceType: "none",
@@ -38,15 +40,17 @@ const [formData, setFormData] = useState({
 if (task) {
       setFormData({
         ...task,
+        assignedTo: task.assignedTo || null,
         dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
       })
     } else {
 setFormData({
-        title: "",
+title: "",
         description: "",
         dueDate: "",
         priority: "medium",
         status: "not-started",
+        assignedTo: null,
         category: "follow-up",
         assignedTo: "current-user",
         relatedTo: "",
@@ -240,21 +244,16 @@ setFormData({
             )}
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+<div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Assigned To
               </label>
-              <select 
+              <AssigneeSelector
                 value={formData.assignedTo}
-                onChange={(e) => setFormData({...formData, assignedTo: e.target.value})}
-                className="input-field"
-              >
-                <option value="current-user">Me</option>
-                <option value="team-member-1">John Smith</option>
-                <option value="team-member-2">Sarah Wilson</option>
-                <option value="team-member-3">Mike Johnson</option>
-              </select>
+                onChange={(value) => setFormData({...formData, assignedTo: value})}
+                placeholder="Assign task to..."
+              />
             </div>
 
             <div className="space-y-1">
@@ -545,7 +544,7 @@ const tasksByStatus = {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
-        </div>
+</div>
 
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Sort by:</label>
@@ -661,13 +660,22 @@ const tasksByStatus = {
                       </div>
                     )}
 
-                    {task.relatedTo && (
-                      <div className="flex items-center space-x-1 text-sm text-slate-500">
-                        <ApperIcon name="User" className="h-4 w-4" />
-                        <span>{getContactName(task.relatedTo)}</span>
+<div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4">
+                        {task.relatedTo && (
+                          <div className="flex items-center space-x-1 text-sm text-slate-500">
+                            <ApperIcon name="User" className="h-4 w-4" />
+                            <span>{getContactName(task.relatedTo)}</span>
+                          </div>
+                        )}
                       </div>
-                    )}
-
+                      {task.assignedTo && (
+                        <AssigneeDisplay 
+                          assigneeId={task.assignedTo} 
+                          size="sm" 
+                        />
+                      )}
+                    </div>
                     <div className="text-xs text-slate-400">
                       Created {format(new Date(task.createdAt), "MMM d, yyyy")}
                       {task.completedAt && (

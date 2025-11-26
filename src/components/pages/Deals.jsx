@@ -3,6 +3,8 @@ import { toast } from "react-toastify";
 import { dealService } from "@/services/api/dealService";
 import { contactService } from "@/services/api/contactService";
 import { format } from "date-fns";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -12,7 +14,7 @@ import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 
 const DealModal = ({ isOpen, deal, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: "",
     amount: "",
     stage: "new",
@@ -20,6 +22,7 @@ const DealModal = ({ isOpen, deal, onClose, onSave }) => {
     closeDate: "",
     contactId: "",
     notes: "",
+    dealOwner: null,
     stageChangedAt: new Date().toISOString()
   })
   const [contacts, setContacts] = useState([])
@@ -33,19 +36,21 @@ const DealModal = ({ isOpen, deal, onClose, onSave }) => {
 
   useEffect(() => {
 if (deal) {
-      setFormData({
+setFormData({
         ...deal,
+        dealOwner: deal.dealOwner || null,
         closeDate: deal.closeDate ? format(new Date(deal.closeDate), "yyyy-MM-dd") : ""
       })
     } else {
       setFormData({
         title: "",
-        amount: "",
+amount: "",
         stage: "new",
         probability: 25,
         closeDate: "",
         contactId: "",
         notes: "",
+        dealOwner: null,
         stageChangedAt: new Date().toISOString()
       })
     }
@@ -175,6 +180,17 @@ if (deal) {
                 </option>
               ))}
             </select>
+</div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Deal Owner
+            </label>
+            <AssigneeSelector
+              value={formData.dealOwner}
+              onChange={(value) => setFormData({...formData, dealOwner: value})}
+              placeholder="Assign deal owner..."
+            />
           </div>
 
           <div className="space-y-1">
@@ -407,7 +423,8 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
             <span>{stage.label} ({dealsByStage[stage.id]?.length || 0})</span>
           </button>
         ))}
-      </div>
+</div>
+      
 
       {/* Deals Display */}
       {filteredDeals.length === 0 ? (
@@ -475,13 +492,14 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
                 </div>
               </div>
 
-              {deal.contactId && (
-                <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                  <ApperIcon name="User" className="h-4 w-4" />
-                  <span>{getContactName(deal.contactId)}</span>
-                </div>
-              )}
-
+<div className="flex items-center justify-between mb-3">
+                {deal.contactId && (
+                  <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                    <ApperIcon name="User" className="h-4 w-4" />
+                    <span>{getContactName(deal.contactId)}</span>
+                  </div>
+                )}
+              </div>
               <div className="flex items-center space-x-2 mb-3">
                 <ApperIcon name="TrendingUp" className="h-4 w-4 text-slate-400" />
                 <span className={`text-sm font-medium ${getProbabilityColor(deal.probability)}`}>

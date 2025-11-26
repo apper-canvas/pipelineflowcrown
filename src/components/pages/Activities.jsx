@@ -4,6 +4,9 @@ import { format } from "date-fns";
 import { activityService } from "@/services/api/activityService";
 import { contactService } from "@/services/api/contactService";
 import { dealService } from "@/services/api/dealService";
+import { teamMemberService } from "@/services/api/teamMemberService";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -13,14 +16,15 @@ import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
 
 export default function Activities() {
-  const [activities, setActivities] = useState([])
-  const [contacts, setContacts] = useState([])
-  const [deals, setDeals] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [searchTerm, setSearchTerm] = useState("")
+  const [activities, setActivities] = useState([]);
+  const [contacts, setContacts] = useState([]);
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all")
   const [selectedPriority, setSelectedPriority] = useState("all")
+  const [selectedAssignee, setSelectedAssignee] = useState("all")
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [editingActivity, setEditingActivity] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -46,7 +50,7 @@ const activityTypes = [
     try {
       setLoading(true)
       setError("")
-      const [activitiesData, contactsData, dealsData] = await Promise.all([
+const [activitiesData, contactsData, dealsData] = await Promise.all([
         activityService.getAll(),
         contactService.getAll(),
         dealService.getAll()
@@ -65,9 +69,10 @@ const activityTypes = [
   const handleSearch = async () => {
     try {
       setLoading(true)
-      const filters = {
+const filters = {
         type: selectedType,
-        priority: selectedPriority
+        priority: selectedPriority,
+        assignee: selectedAssignee
       }
       const results = await activityService.search(searchTerm, filters)
       setActivities(results)
@@ -81,8 +86,9 @@ const activityTypes = [
 
   const handleClearFilters = () => {
     setSearchTerm("")
-    setSelectedType("all")
+setSelectedType("all")
     setSelectedPriority("all")
+    setSelectedAssignee("all")
     loadData()
   }
 
@@ -98,7 +104,19 @@ const activityTypes = [
     return deal ? deal.title : 'Unknown Deal'
   }
 
-const getActivityIcon = (type) => {
+const getAssigneeName = (assigneeId) => {
+    // This would normally come from a context or prop
+    const teamMembers = [
+      { Id: 1, name: "Current User" },
+      { Id: 2, name: "John Smith" },
+      { Id: 3, name: "Sarah Wilson" },
+      { Id: 4, name: "Mike Johnson" }
+    ]
+    const assignee = teamMembers.find(m => m.Id === assigneeId)
+    return assignee ? assignee.name : "Unknown"
+  }
+
+  const getActivityIcon = (type) => {
     const activityType = activityTypes.find(t => t.value === type)
     return activityType ? activityType.icon : 'Activity'
   }
@@ -210,8 +228,8 @@ const formatActivityTime = (dateString) => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="flex flex-col md:flex-row gap-4">
+<div className="card">
+        <div className="flex flex-col lg:flex-row gap-4">
           <div className="flex-1">
             <Input
               placeholder="Search activities..."
@@ -221,38 +239,50 @@ const formatActivityTime = (dateString) => {
             />
           </div>
           
-          <select
-            value={selectedType}
-            onChange={(e) => setSelectedType(e.target.value)}
-            className="input-field md:w-40"
-          >
-            <option value="all">All Types</option>
-            {activityTypes.map(type => (
-              <option key={type.value} value={type.value}>{type.label}</option>
-            ))}
-          </select>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <select
+              value={selectedType}
+              onChange={(e) => setSelectedType(e.target.value)}
+              className="input-field sm:w-40"
+            >
+              <option value="all">All Types</option>
+              {activityTypes.map(type => (
+                <option key={type.value} value={type.value}>{type.label}</option>
+              ))}
+            </select>
 
-          <select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value)}
-            className="input-field md:w-40"
-          >
-            <option value="all">All Priorities</option>
-            {priorities.map(priority => (
-              <option key={priority.value} value={priority.value}>{priority.label}</option>
-            ))}
-          </select>
+            <select
+              value={selectedPriority}
+              onChange={(e) => setSelectedPriority(e.target.value)}
+              className="input-field sm:w-40"
+            >
+              <option value="all">All Priorities</option>
+              {priorities.map(priority => (
+                <option key={priority.value} value={priority.value}>{priority.label}</option>
+              ))}
+            </select>
 
-          <Button onClick={handleSearch} className="btn-primary">
-            <ApperIcon name="Search" className="h-4 w-4 mr-2" />
-            Search
-          </Button>
+            <select
+              value={selectedAssignee}
+              onChange={(e) => setSelectedAssignee(e.target.value)}
+              className="input-field sm:w-40"
+            >
+              <option value="all">All Assignees</option>
+              <option value="current-user">My Activities</option>
+              <option value="unassigned">Unassigned</option>
+            </select>
 
-          {(searchTerm || selectedType !== 'all' || selectedPriority !== 'all') && (
-            <Button onClick={handleClearFilters} variant="secondary">
-              Clear
+            <Button onClick={handleSearch} className="btn-primary whitespace-nowrap">
+              <ApperIcon name="Search" className="h-4 w-4 mr-2" />
+              Search
             </Button>
-          )}
+
+            {(searchTerm || selectedType !== 'all' || selectedPriority !== 'all' || selectedAssignee !== 'all') && (
+              <Button onClick={handleClearFilters} variant="secondary" className="whitespace-nowrap">
+                Clear
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -323,21 +353,30 @@ const formatActivityTime = (dateString) => {
                   </h3>
 
                   <div className="flex items-center space-x-4 text-sm text-gray-500 mb-2">
-                    <div className="flex items-center space-x-1">
-                      <ApperIcon name="User" className="h-4 w-4" />
-                      <span>{getContactName(activity.contactId)}</span>
-                    </div>
-                    {activity.dealId && (
-                      <div className="flex items-center space-x-1">
-                        <ApperIcon name="DollarSign" className="h-4 w-4" />
-                        <span>{getDealTitle(activity.dealId)}</span>
+<div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-4 text-xs">
+                        <div className="flex items-center space-x-1">
+                          <ApperIcon name="User" className="h-4 w-4" />
+                          <span>{getContactName(activity.contactId)}</span>
+                        </div>
+                        {activity.dealId && (
+                          <div className="flex items-center space-x-1">
+                            <ApperIcon name="DollarSign" className="h-4 w-4" />
+                            <span>{getDealTitle(activity.dealId)}</span>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-1">
+                          <ApperIcon name="Clock" className="h-4 w-4" />
+                          <span>{formatActivityTime(activity.createdAt)}</span>
+                        </div>
                       </div>
-                    )}
-                    <div className="flex items-center space-x-1">
-                      <ApperIcon name="Clock" className="h-4 w-4" />
-                      <span>{formatActivityTime(activity.createdAt)}</span>
+                      {activity.assignedTo && (
+                        <AssigneeDisplay 
+                          assigneeId={activity.assignedTo} 
+                          size="sm" 
+                        />
+                      )}
                     </div>
-                  </div>
 
                   {/* Type-specific details */}
                   {activity.type === 'call' && activity.duration && (
@@ -398,7 +437,7 @@ const formatActivityTime = (dateString) => {
       )}
 
       {/* Activity Modal */}
-      {showActivityModal && (
+{showActivityModal && (
         <ActivityModal
           activity={editingActivity}
           contacts={contacts}
@@ -474,13 +513,14 @@ const formatActivityTime = (dateString) => {
 
 // Activity Modal Component with Meeting Scheduling
 function ActivityModal({ activity, contacts, deals, onClose, onSave, isSubmitting }) {
-const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState({
     type: activity?.type || 'call',
     description: activity?.description || '',
     notes: activity?.notes || '',
     contactId: activity?.contactId || '',
     dealId: activity?.dealId || '',
     priority: activity?.priority || 'medium',
+    assignedTo: activity?.assignedTo || null,
     duration: activity?.duration || '',
     recordingLink: activity?.recordingLink || '',
     participants: activity?.participants ? activity.participants.join(', ') : '',
@@ -507,6 +547,7 @@ const activityData = {
       participants: formData.type === 'meeting' && formData.participants 
         ? formData.participants.split(',').map(p => p.trim()).filter(p => p) 
         : undefined,
+assignedTo: formData.assignedTo,
       userName: 'Current User' // This would come from auth context in real app
     }
 
@@ -706,6 +747,17 @@ return (
                 ))}
               </select>
             </div>
+</div>
+
+          <div className="space-y-1">
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
+              Assigned To
+            </label>
+            <AssigneeSelector
+              value={formData.assignedTo}
+              onChange={(value) => setFormData({...formData, assignedTo: value})}
+              placeholder="Assign activity to..."
+            />
           </div>
 
           {renderTypeSpecificFields()}

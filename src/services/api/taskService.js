@@ -5,9 +5,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 let tasks = [...tasksData]
 
 export const taskService = {
-  async getAll() {
+async getAll() {
     await delay(300)
     return [...tasks]
+  },
+
+  async getByAssignee(assigneeId) {
+    await delay(300)
+    return tasks.filter(t => t.assignedTo === parseInt(assigneeId))
   },
 
   async getById(id) {
@@ -21,14 +26,16 @@ export const taskService = {
 
   async create(taskData) {
     await delay(300)
-const newTask = {
+const now = new Date().toISOString()
+    const newTask = {
       ...taskData,
       Id: Math.max(...tasks.map(t => t.Id)) + 1,
       status: taskData.status || "not-started",
       category: taskData.category || "follow-up",
-      assignedTo: taskData.assignedTo || "current-user",
-      createdAt: new Date().toISOString(),
-      completedAt: taskData.status === "completed" ? new Date().toISOString() : null
+      assignedTo: taskData.assignedTo || null,
+      assignedAt: taskData.assignedTo ? now : null,
+      createdAt: now,
+      completedAt: taskData.status === "completed" ? now : null
     }
     tasks = [newTask, ...tasks]
     return { ...newTask }
@@ -41,12 +48,18 @@ const newTask = {
       throw new Error("Task not found")
     }
     
-const updatedTask = {
+const now = new Date().toISOString()
+    const previousAssignee = tasks[index].assignedTo
+    const newAssignee = taskData.assignedTo
+    
+    const updatedTask = {
       ...tasks[index],
       ...taskData,
       Id: parseInt(id),
-      completedAt: taskData.status === "completed" && !tasks[index].completedAt ? new Date().toISOString() : (taskData.status === "completed" ? tasks[index].completedAt : null),
-      updatedAt: new Date().toISOString()
+      assignedTo: newAssignee || null,
+      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : tasks[index].assignedAt,
+      completedAt: taskData.status === "completed" && !tasks[index].completedAt ? now : (taskData.status === "completed" ? tasks[index].completedAt : null),
+      updatedAt: now
     }
     
     tasks[index] = updatedTask

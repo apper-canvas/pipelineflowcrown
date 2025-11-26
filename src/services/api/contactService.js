@@ -5,9 +5,14 @@ const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 let contacts = [...contactsData]
 
 export const contactService = {
-  async getAll() {
+async getAll() {
     await delay(400)
     return [...contacts]
+  },
+
+  async getByAssignee(assigneeId) {
+    await delay(400)
+    return contacts.filter(c => c.assignedTo === parseInt(assigneeId))
   },
 
   async getById(id) {
@@ -43,6 +48,8 @@ const now = new Date().toISOString()
       Id: Math.max(...contacts.map(c => c.Id)) + 1,
       avatar: contactData.avatar || "",
       tags: contactData.tags || [],
+      assignedTo: contactData.assignedTo || null,
+      assignedAt: contactData.assignedTo ? now : null,
       createdAt: now,
       lastContactedAt: now
     }
@@ -73,10 +80,15 @@ async update(id, contactData) {
     }
     
 const now = new Date().toISOString()
+    const previousAssignee = contacts[index].assignedTo
+    const newAssignee = contactData.assignedTo
+    
     const updatedContact = {
       ...contacts[index],
       ...contactData,
       Id: parseInt(id),
+      assignedTo: newAssignee || null,
+      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : contacts[index].assignedAt,
       updatedAt: now,
       lastContactedAt: now
     }
