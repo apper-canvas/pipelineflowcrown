@@ -11,13 +11,15 @@ import { leadService } from "@/services/api/leadService"
 import { format } from "date-fns"
 
 const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: "",
     company: "",
     contactName: "",
     email: "",
     phone: "",
     value: "",
+    budget: "",
+    timeline: "",
     source: "website",
     stage: "new",
     notes: ""
@@ -33,6 +35,8 @@ useEffect(() => {
         email: lead.email || "",
         phone: lead.phone || "",
         value: lead.value || "",
+        budget: lead.budget || "",
+        timeline: lead.timeline || "",
         source: lead.source || "website",
         stage: lead.stage || "new",
         notes: lead.notes || ""
@@ -45,6 +49,8 @@ useEffect(() => {
         email: "",
         phone: "",
         value: "",
+        budget: "",
+        timeline: "",
         source: "website",
         stage: "new",
         notes: ""
@@ -102,6 +108,118 @@ if (!formData.title.trim() || !formData.company.trim()) {
             placeholder="New Business Opportunity"
             required
           />
+
+          <Input
+            label="Company"
+            value={formData.company}
+            onChange={(e) => setFormData({...formData, company: e.target.value})}
+            placeholder="Company Name"
+            required
+          />
+
+          <Input
+            label="Contact Name"
+            value={formData.contactName}
+            onChange={(e) => setFormData({...formData, contactName: e.target.value})}
+            placeholder="John Doe"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData({...formData, email: e.target.value})}
+              placeholder="john@company.com"
+            />
+
+            <Input
+              label="Phone"
+              type="tel"
+              value={formData.phone}
+              onChange={(e) => setFormData({...formData, phone: e.target.value})}
+              placeholder="+1 (555) 123-4567"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Input
+              label="Deal Value"
+              type="number"
+              value={formData.value}
+              onChange={(e) => setFormData({...formData, value: e.target.value})}
+              placeholder="25000"
+              min="0"
+            />
+
+            <Input
+              label="Budget"
+              type="number"
+              value={formData.budget}
+              onChange={(e) => setFormData({...formData, budget: e.target.value})}
+              placeholder="30000"
+              min="0"
+            />
+          </div>
+
+          <Input
+            label="Timeline"
+            value={formData.timeline}
+            onChange={(e) => setFormData({...formData, timeline: e.target.value})}
+            placeholder="Q2 2024"
+          />
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Source
+              </label>
+              <select
+                value={formData.source}
+                onChange={(e) => setFormData({...formData, source: e.target.value})}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
+              >
+                <option value="website">Website</option>
+                <option value="referral">Referral</option>
+                <option value="cold-call">Cold Call</option>
+                <option value="email">Email</option>
+                <option value="trade-show">Trade Show</option>
+                <option value="social-media">Social Media</option>
+                <option value="partner">Partner</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+                Stage
+              </label>
+              <select
+                value={formData.stage}
+                onChange={(e) => setFormData({...formData, stage: e.target.value})}
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
+              >
+                {stages.map(stage => (
+                  <option key={stage.id} value={stage.id}>
+                    {stage.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
+              Notes
+            </label>
+            <textarea
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
+              placeholder="Additional notes about this lead..."
+              rows="3"
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none bg-white dark:bg-slate-800 dark:border-slate-600"
+            />
+          </div>
           
           <Input
             label="Company"
@@ -414,114 +532,165 @@ return (
         />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredLeads.map((lead) => (
-            <div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex-1">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
-                    <Badge variant="default" size="sm">
-                      {getStageLabel(lead.stage)}
-                    </Badge>
-                    {lead.source && (
-                      <Badge variant="outline" size="sm" className="text-xs">
-                        {getSourceLabel(lead.source)}
+          {filteredLeads.map((lead) => {
+            const getScoreColor = (score) => {
+              if (score >= 71) return 'bg-green-100 text-green-800 border-green-200'
+              if (score >= 41) return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+              return 'bg-red-100 text-red-800 border-red-200'
+            }
+
+            const getScoreLabel = (score) => {
+              if (score >= 71) return 'Hot'
+              if (score >= 41) return 'Warm'
+              return 'Cold'
+            }
+
+            return (
+              <div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <div className={`w-3 h-3 rounded-full ${getStageColor(lead.stage)}`}></div>
+                      <Badge variant="default" size="sm">
+                        {getStageLabel(lead.stage)}
                       </Badge>
+                      {lead.source && (
+                        <Badge variant="outline" size="sm" className="text-xs">
+                          {getSourceLabel(lead.source)}
+                        </Badge>
+                      )}
+                    </div>
+                    
+                    {/* Lead Score Badge */}
+                    <div className="flex items-center space-x-2 mb-3">
+                      <div className={`px-3 py-1 rounded-full text-xs font-semibold border ${getScoreColor(lead.score || 0)}`}>
+                        <div className="flex items-center space-x-1">
+                          <ApperIcon name="TrendingUp" className="h-3 w-3" />
+                          <span>{lead.score || 0}/100</span>
+                          <span className="text-xs opacity-75">({getScoreLabel(lead.score || 0)})</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
+                      {lead.title}
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">
+                      {lead.company}
+                    </p>
+                  </div>
+                  
+                  <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+                    <button
+                      onClick={() => {
+                        setSelectedLead(lead)
+                        setIsModalOpen(true)
+                      }}
+                      className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
+                      title="Edit lead"
+                    >
+                      <ApperIcon name="Edit" className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(lead.Id)}
+                      className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
+                      title="Delete lead"
+                    >
+                      <ApperIcon name="Trash2" className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {lead.contactName && (
+                  <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                    <ApperIcon name="User" className="h-4 w-4" />
+                    <span>{lead.contactName}</span>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  {lead.value && (
+                    <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                      <ApperIcon name="DollarSign" className="h-4 w-4" />
+                      <div>
+                        <div className="text-xs opacity-75">Value</div>
+                        <div className="font-medium">${parseFloat(lead.value).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {lead.budget && (
+                    <div className="flex items-center space-x-2 text-sm text-slate-600 dark:text-slate-400">
+                      <ApperIcon name="Wallet" className="h-4 w-4" />
+                      <div>
+                        <div className="text-xs opacity-75">Budget</div>
+                        <div className="font-medium">${parseFloat(lead.budget).toLocaleString()}</div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {lead.timeline && (
+                  <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
+                    <ApperIcon name="Calendar" className="h-4 w-4" />
+                    <div>
+                      <span className="text-xs opacity-75">Timeline: </span>
+                      <span className="font-medium">{lead.timeline}</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
+                    {lead.email && (
+                      <a 
+                        href={`mailto:${lead.email}`}
+                        className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                        title={`Email ${lead.email}`}
+                      >
+                        <ApperIcon name="Mail" className="h-4 w-4" />
+                        <span>Email</span>
+                      </a>
+                    )}
+                    {lead.phone && (
+                      <a 
+                        href={`tel:${lead.phone}`}
+                        className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
+                        title={`Call ${lead.phone}`}
+                      >
+                        <ApperIcon name="Phone" className="h-4 w-4" />
+                        <span>Call</span>
+                      </a>
                     )}
                   </div>
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">
-                    {lead.title}
-                  </h3>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm">
-                    {lead.company}
-                  </p>
-                </div>
-                
-                <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  <button
-                    onClick={() => {
-                      setSelectedLead(lead)
-                      setIsModalOpen(true)
-                    }}
-                    className="p-2 text-slate-400 hover:text-primary-600 hover:bg-primary-50 rounded-lg transition-colors duration-200"
-                    title="Edit lead"
+
+                  <select
+                    value={lead.stage}
+                    onChange={(e) => handleStageChange(lead.Id, e.target.value)}
+                    className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Change stage"
                   >
-                    <ApperIcon name="Edit" className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(lead.Id)}
-                    className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors duration-200"
-                    title="Delete lead"
-                  >
-                    <ApperIcon name="Trash2" className="h-4 w-4" />
-                  </button>
+                    {stages.map(stage => (
+                      <option key={stage.id} value={stage.id}>
+                        {stage.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {lead.notes && (
+                  <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-700 rounded text-sm text-slate-600 dark:text-slate-400">
+                    {lead.notes.length > 100 ? `${lead.notes.substring(0, 100)}...` : lead.notes}
+                  </div>
+                )}
+
+                <div className="mt-3 text-xs text-slate-400">
+                  Created {format(new Date(lead.createdAt), "MMM d, yyyy")}
                 </div>
               </div>
-
-              {lead.contactName && (
-                <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                  <ApperIcon name="User" className="h-4 w-4" />
-                  <span>{lead.contactName}</span>
-                </div>
-              )}
-
-              {lead.value && (
-                <div className="flex items-center space-x-2 mb-3 text-sm text-slate-600 dark:text-slate-400">
-                  <ApperIcon name="DollarSign" className="h-4 w-4" />
-                  <span>${parseFloat(lead.value).toLocaleString()}</span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between pt-3 border-t border-slate-200 dark:border-slate-700">
-                <div className="flex items-center space-x-4 text-sm text-slate-500 dark:text-slate-400">
-                  {lead.email && (
-                    <a 
-                      href={`mailto:${lead.email}`}
-                      className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
-                      title={`Email ${lead.email}`}
-                    >
-                      <ApperIcon name="Mail" className="h-4 w-4" />
-                      <span>Email</span>
-                    </a>
-                  )}
-                  {lead.phone && (
-                    <a 
-                      href={`tel:${lead.phone}`}
-                      className="flex items-center space-x-1 hover:text-primary-600 transition-colors duration-200"
-                      title={`Call ${lead.phone}`}
-                    >
-                      <ApperIcon name="Phone" className="h-4 w-4" />
-                      <span>Call</span>
-                    </a>
-                  )}
-                </div>
-
-                <select
-                  value={lead.stage}
-                  onChange={(e) => handleStageChange(lead.Id, e.target.value)}
-                  className="text-sm border border-slate-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 bg-white dark:bg-slate-800 dark:border-slate-600"
-                  onClick={(e) => e.stopPropagation()}
-                  title="Change stage"
-                >
-                  {stages.map(stage => (
-                    <option key={stage.id} value={stage.id}>
-                      {stage.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {lead.notes && (
-                <div className="mt-3 p-2 bg-slate-50 dark:bg-slate-700 rounded text-sm text-slate-600 dark:text-slate-400">
-                  {lead.notes.length > 100 ? `${lead.notes.substring(0, 100)}...` : lead.notes}
-                </div>
-              )}
-
-              <div className="mt-3 text-xs text-slate-400">
-                Created {format(new Date(lead.createdAt), "MMM d, yyyy")}
-              </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
