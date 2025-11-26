@@ -41,7 +41,7 @@ assignedTo: null,
 
 useEffect(() => {
     if (lead) {
-setFormData({
+      setFormData({
         title: lead.title || "",
         company: lead.company || "",
         contactName: lead.contactName || "",
@@ -53,7 +53,7 @@ setFormData({
         source: lead.source || "website",
         stage: lead.stage || "new",
         notes: lead.notes || "",
-assignedTo: lead.assignedTo || null,
+        assignedTo: lead.assignedTo || null,
         assignmentHistory: lead.assignmentHistory || [],
         qualification: lead.qualification || {
           budget: false,
@@ -67,7 +67,7 @@ assignedTo: lead.assignedTo || null,
       })
     } else {
       setFormData({
-title: "",
+        title: "",
         company: "",
         contactName: "",
         email: "",
@@ -78,7 +78,7 @@ title: "",
         source: "website",
         stage: "new",
         notes: "",
-assignedTo: null,
+        assignedTo: null,
         assignmentHistory: [],
         qualification: {
           budget: false,

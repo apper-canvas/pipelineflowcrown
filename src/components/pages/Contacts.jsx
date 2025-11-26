@@ -37,7 +37,7 @@ useEffect(() => {
         company: contact.company || "",
         position: contact.position || "",
         tags: contact.tags || [],
-assignedTo: contact.assignedTo || null,
+        assignedTo: contact.assignedTo || null,
         assignmentHistory: contact.assignmentHistory || []
       });
     } else {
@@ -47,7 +47,7 @@ assignedTo: contact.assignedTo || null,
         phone: "",
         company: "",
         position: "",
-assignedTo: null,
+        assignedTo: null,
         assignmentHistory: [],
         tags: []
       });
@@ -246,10 +246,9 @@ const applyFilters = () => {
     }
 
     // Assignee filter
-    if (assigneeFilter === "current-user") {
-      // Note: teamMemberService would need to be imported and implemented
-      // const currentUser = teamMemberService.getCurrentUser();
-// filtered = filtered.filter(contact => contact.assignedTo === currentUser.Id);
+if (assigneeFilter === "current-user") {
+      const currentUser = teamMemberService.getCurrentUser();
+      filtered = filtered.filter(contact => contact.assignedTo === currentUser.Id);
     } else if (assigneeFilter === "unassigned") {
       filtered = filtered.filter(contact => !contact.assignedTo);
     }

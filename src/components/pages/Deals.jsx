@@ -37,8 +37,8 @@ dealOwner: null,
 
   useEffect(() => {
 if (deal) {
-setFormData({
-...deal,
+      setFormData({
+        ...deal,
         dealOwner: deal.dealOwner || null,
         assignmentHistory: deal.assignmentHistory || [],
         closeDate: deal.closeDate ? format(new Date(deal.closeDate), "yyyy-MM-dd") : ""
@@ -46,13 +46,13 @@ setFormData({
     } else {
       setFormData({
         title: "",
-amount: "",
+        amount: "",
         stage: "new",
         probability: 25,
         closeDate: "",
         contactId: "",
         notes: "",
-dealOwner: null,
+        dealOwner: null,
         assignmentHistory: [],
         stageChangedAt: new Date().toISOString()
       })

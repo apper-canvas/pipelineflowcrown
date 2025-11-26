@@ -26,6 +26,8 @@ const LoadingFallback = () => (
   </div>
 );
 
+const AssignmentRules = lazy(() => import("@/components/pages/AssignmentRules"));
+
 const mainRoutes = [
   {
     path: "",
@@ -97,6 +99,14 @@ const mainRoutes = [
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <MyAssignments />
+      </Suspense>
+    )
+  },
+  {
+    path: "assignment-rules",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <AssignmentRules />
       </Suspense>
     )
   },

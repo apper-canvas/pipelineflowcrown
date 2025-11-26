@@ -41,20 +41,19 @@ assignedTo: null,
 if (task) {
       setFormData({
         ...task,
-assignedTo: task.assignedTo || null,
+        assignedTo: task.assignedTo || null,
         assignmentHistory: task.assignmentHistory || [],
         dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
       })
     } else {
-setFormData({
-title: "",
+      setFormData({
+        title: "",
         description: "",
         dueDate: "",
         priority: "medium",
         status: "not-started",
         assignedTo: null,
         category: "follow-up",
-assignedTo: null,
         assignmentHistory: [],
         relatedTo: "",
         relatedType: "contact",
