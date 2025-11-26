@@ -8,7 +8,7 @@ let leads = [...leadsData]
 // Lead scoring configuration
 const SCORING_RULES = {
   value: {
-    weight: 0.4,
+    weight: 0.3,
     ranges: [
       { min: 0, max: 10000, score: 20 },
       { min: 10001, max: 25000, score: 40 },
@@ -31,12 +31,24 @@ const SCORING_RULES = {
     }
   },
   completeness: {
-    weight: 0.2,
+    weight: 0.15,
     fields: ['title', 'company', 'contactName', 'email', 'phone', 'value', 'budget', 'timeline', 'notes']
   },
   recency: {
-    weight: 0.15,
+    weight: 0.1,
     maxDays: 30
+  },
+  qualification: {
+    weight: 0.2,
+    criteria: {
+      budget: 15,
+      authority: 15,
+      need: 20,
+      timeline: 15,
+      decisionProcess: 10,
+      competition: 10,
+      fit: 15
+    }
   }
 }
 
@@ -65,6 +77,17 @@ function calculateLeadScore(lead) {
   const daysSinceUpdate = (Date.now() - updatedAt.getTime()) / (1000 * 60 * 60 * 24);
   const recencyScore = Math.max(0, 100 - (daysSinceUpdate / SCORING_RULES.recency.maxDays) * 100);
   totalScore += recencyScore * SCORING_RULES.recency.weight;
+  
+  // Qualification score
+  if (lead.qualification) {
+    let qualificationScore = 0;
+    Object.entries(SCORING_RULES.qualification.criteria).forEach(([criterion, points]) => {
+      if (lead.qualification[criterion]) {
+        qualificationScore += points;
+      }
+    });
+    totalScore += qualificationScore * SCORING_RULES.qualification.weight;
+  }
   
   return Math.round(Math.max(1, Math.min(100, totalScore)));
 }
@@ -126,8 +149,17 @@ async create(leadData) {
       value: leadData.value ? parseFloat(leadData.value) : null,
       budget: leadData.budget ? parseFloat(leadData.budget) : null,
       timeline: leadData.timeline || null,
-      createdAt: now,
-      updatedAt: now
+createdAt: now,
+      updatedAt: now,
+      qualification: leadData.qualification || {
+        budget: false,
+        authority: false,
+        need: false,
+        timeline: false,
+        decisionProcess: false,
+        competition: false,
+        fit: false
+      }
     }
     
     // Calculate initial score
@@ -157,7 +189,16 @@ async update(id, leadData) {
       Id: parseInt(id),
       value: leadData.value ? parseFloat(leadData.value) : previousLead.value,
       budget: leadData.budget ? parseFloat(leadData.budget) : previousLead.budget,
-      timeline: leadData.timeline || previousLead.timeline,
+timeline: leadData.timeline || previousLead.timeline,
+      qualification: leadData.qualification || previousLead.qualification || {
+        budget: false,
+        authority: false,
+        need: false,
+        timeline: false,
+        decisionProcess: false,
+        competition: false,
+        fit: false
+      },
       updatedAt: new Date().toISOString()
     }
     

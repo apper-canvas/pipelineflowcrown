@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react"
-import { toast } from "react-toastify"
-import Loading from "@/components/ui/Loading"
-import ErrorView from "@/components/ui/ErrorView"
-import Empty from "@/components/ui/Empty"
-import ApperIcon from "@/components/ApperIcon"
-import Badge from "@/components/atoms/Badge"
-import Button from "@/components/atoms/Button"
-import Input from "@/components/atoms/Input"
-import { leadService } from "@/services/api/leadService"
-import { format } from "date-fns"
+import React, { useEffect, useState } from "react";
+import { toast } from "react-toastify";
+import { leadService } from "@/services/api/leadService";
+import { format } from "date-fns";
+import ApperIcon from "@/components/ApperIcon";
+import Loading from "@/components/ui/Loading";
+import ErrorView from "@/components/ui/ErrorView";
+import Empty from "@/components/ui/Empty";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Badge from "@/components/atoms/Badge";
 
 const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
 const [formData, setFormData] = useState({
@@ -22,7 +22,16 @@ const [formData, setFormData] = useState({
     timeline: "",
     source: "website",
     stage: "new",
-    notes: ""
+notes: "",
+    qualification: {
+      budget: false,
+      authority: false,
+      need: false,
+      timeline: false,
+      decisionProcess: false,
+      competition: false,
+      fit: false
+    }
   })
   const [saving, setSaving] = useState(false)
 
@@ -38,8 +47,17 @@ useEffect(() => {
         budget: lead.budget || "",
         timeline: lead.timeline || "",
         source: lead.source || "website",
-        stage: lead.stage || "new",
-        notes: lead.notes || ""
+stage: lead.stage || "new",
+        notes: lead.notes || "",
+        qualification: lead.qualification || {
+          budget: false,
+          authority: false,
+          need: false,
+          timeline: false,
+          decisionProcess: false,
+          competition: false,
+          fit: false
+        }
       })
     } else {
       setFormData({
@@ -53,10 +71,22 @@ useEffect(() => {
         timeline: "",
         source: "website",
         stage: "new",
-        notes: ""
+notes: "",
+        qualification: {
+          budget: false,
+          authority: false,
+          need: false,
+          timeline: false,
+          decisionProcess: false,
+          competition: false,
+          fit: false
+        }
       })
     }
   }, [lead])
+
+const [showQualificationModal, setShowQualificationModal] = useState(false)
+  const [qualifyingLead, setQualifyingLead] = useState(null)
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -209,7 +239,7 @@ if (!formData.title.trim() || !formData.company.trim()) {
             </div>
           </div>
 
-          <div>
+<div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               Notes
             </label>
@@ -220,14 +250,59 @@ if (!formData.title.trim() || !formData.company.trim()) {
               rows="3"
               className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 resize-none bg-white dark:bg-slate-800 dark:border-slate-600"
             />
-</div>
+          </div>
 
-          <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
+          {/* Qualification Checklist */}
+          <div>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
+              Qualification Criteria
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {Object.entries({
+                budget: "Budget Confirmed",
+                authority: "Decision Maker Identified",
+                need: "Clear Business Need",
+                timeline: "Timeline Established",
+                decisionProcess: "Decision Process Known",
+                competition: "Competition Assessed",
+                fit: "Good Product Fit"
+              }).map(([key, label]) => (
+                <label key={key} className="flex items-center space-x-2 p-2 rounded border border-slate-200 hover:bg-slate-50 dark:border-slate-600 dark:hover:bg-slate-700 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.qualification[key]}
+                    onChange={(e) => setFormData({
+                      ...formData,
+                      qualification: {
+                        ...formData.qualification,
+                        [key]: e.target.checked
+                      }
+                    })}
+                    className="rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                  />
+                  <span className="text-sm text-slate-700 dark:text-slate-300">{label}</span>
+                </label>
+              ))}
+            </div>
+            <div className="mt-2 text-xs text-slate-500">
+              Qualification score: {Object.values(formData.qualification).filter(Boolean).length}/7 criteria met
+</div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
               Cancel
             </Button>
-            <Button type="submit" disabled={saving} className="flex-1">
-              {saving ? "Saving..." : lead ? "Update" : "Create"}
+            <Button
+              type="submit"
+              disabled={saving}
+              className="btn-primary"
+            >
+              {saving ? 'Saving...' : (lead ? 'Update Lead' : 'Create Lead')}
             </Button>
           </div>
         </form>
@@ -235,6 +310,370 @@ if (!formData.title.trim() || !formData.company.trim()) {
     </div>
   )
 }
+
+{/* Qualification Modal */}
+{showQualificationModal && qualifyingLead && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              Qualify Lead: {qualifyingLead.title}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {qualifyingLead.company} • {qualifyingLead.contactName}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowQualificationModal(false)}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+          >
+            <ApperIcon name="X" className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={async (e) => {
+          e.preventDefault()
+          try {
+            const qualificationNotes = Object.entries(qualifyingLead.qualification || {})
+              .map(([key, value]) => {
+                const labels = {
+                  budget: "Budget Confirmed",
+                  authority: "Decision Maker Identified", 
+                  need: "Clear Business Need",
+                  timeline: "Timeline Established",
+                  decisionProcess: "Decision Process Known",
+                  competition: "Competition Assessed",
+                  fit: "Good Product Fit"
+                }
+                return `${labels[key]}: ${value ? '✓' : '✗'}`
+              }).join('\n')
+
+            const updatedNotes = qualifyingLead.notes + '\n\n--- Qualification Results ---\n' + qualificationNotes
+
+            await leadService.update(qualifyingLead.Id, {
+              ...qualifyingLead,
+              notes: updatedNotes,
+              qualification: qualifyingLead.qualification
+            })
+            
+            setLeads(prev => prev.map(lead => 
+              lead.Id === qualifyingLead.Id 
+                ? { ...lead, ...qualifyingLead, notes: updatedNotes }
+                : lead
+            ))
+            
+            setShowQualificationModal(false)
+            toast.success('Lead qualification updated successfully!')
+          } catch (error) {
+            toast.error('Failed to update lead qualification')
+          }
+        }}>
+          <div className="space-y-4 mb-6">
+            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+              <h3 className="font-medium text-slate-900 dark:text-white mb-3">BANT Qualification Criteria</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries({
+                  budget: { 
+                    label: "Budget Confirmed", 
+                    desc: "Prospect has confirmed budget availability and amount matches our pricing"
+                  },
+                  authority: { 
+                    label: "Decision Maker Identified", 
+                    desc: "We know who makes the final decision and have access to them"
+                  },
+                  need: { 
+                    label: "Clear Business Need", 
+                    desc: "Prospect has articulated specific pain points our solution addresses"
+                  },
+                  timeline: { 
+                    label: "Timeline Established", 
+                    desc: "Prospect has provided specific timeline for implementation"
+                  }
+                }).map(([key, info]) => (
+                  <label key={key} className="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={qualifyingLead.qualification?.[key] || false}
+                      onChange={(e) => setQualifyingLead({
+                        ...qualifyingLead,
+                        qualification: {
+                          ...qualifyingLead.qualification,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-900 dark:text-white">{info.label}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">{info.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+              <h3 className="font-medium text-slate-900 dark:text-white mb-3">Additional Qualification Factors</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries({
+                  decisionProcess: { 
+                    label: "Decision Process Known", 
+                    desc: "We understand their evaluation process and key stakeholders"
+                  },
+                  competition: { 
+                    label: "Competition Assessed", 
+                    desc: "We know who we're competing against and our competitive position"
+                  },
+                  fit: { 
+                    label: "Good Product Fit", 
+                    desc: "Our solution aligns well with their requirements and use case"
+                  }
+                }).map(([key, info]) => (
+                  <label key={key} className="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={qualifyingLead.qualification?.[key] || false}
+                      onChange={(e) => setQualifyingLead({
+                        ...qualifyingLead,
+                        qualification: {
+                          ...qualifyingLead.qualification,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-900 dark:text-white">{info.label}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">{info.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="Info" className="w-5 h-5 text-blue-600" />
+                <div>
+                  <div className="font-medium text-blue-900 dark:text-blue-100">
+                    Qualification Score: {Object.values(qualifyingLead.qualification || {}).filter(Boolean).length}/7
+                  </div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    {Object.values(qualifyingLead.qualification || {}).filter(Boolean).length >= 4 
+                      ? "Well qualified lead - strong conversion potential"
+                      : Object.values(qualifyingLead.qualification || {}).filter(Boolean).length >= 2
+                      ? "Partially qualified - requires further development"
+                      : "Early stage - significant qualification work needed"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              type="button"
+              onClick={() => setShowQualificationModal(false)}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="btn-primary"
+            >
+              Save Qualification
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* Qualification Modal */}
+{showQualificationModal && qualifyingLead && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <div className="p-6">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-xl font-semibold text-slate-900 dark:text-white">
+              Qualify Lead: {qualifyingLead.title}
+            </h2>
+            <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+              {qualifyingLead.company} • {qualifyingLead.contactName}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowQualificationModal(false)}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+          >
+            <ApperIcon name="X" className="w-5 h-5" />
+          </button>
+        </div>
+
+        <form onSubmit={async (e) => {
+          e.preventDefault()
+          try {
+            const qualificationNotes = Object.entries(qualifyingLead.qualification || {})
+              .map(([key, value]) => {
+                const labels = {
+                  budget: "Budget Confirmed",
+                  authority: "Decision Maker Identified", 
+                  need: "Clear Business Need",
+                  timeline: "Timeline Established",
+                  decisionProcess: "Decision Process Known",
+                  competition: "Competition Assessed",
+                  fit: "Good Product Fit"
+                }
+                return `${labels[key]}: ${value ? '✓' : '✗'}`
+              }).join('\n')
+
+            const updatedNotes = qualifyingLead.notes + '\n\n--- Qualification Results ---\n' + qualificationNotes
+
+            await leadService.update(qualifyingLead.Id, {
+              ...qualifyingLead,
+              notes: updatedNotes,
+              qualification: qualifyingLead.qualification
+            })
+            
+            setLeads(prev => prev.map(lead => 
+              lead.Id === qualifyingLead.Id 
+                ? { ...lead, ...qualifyingLead, notes: updatedNotes }
+                : lead
+            ))
+            
+            setShowQualificationModal(false)
+            toast.success('Lead qualification updated successfully!')
+          } catch (error) {
+            toast.error('Failed to update lead qualification')
+          }
+        }}>
+          <div className="space-y-4 mb-6">
+            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+              <h3 className="font-medium text-slate-900 dark:text-white mb-3">BANT Qualification Criteria</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries({
+                  budget: { 
+                    label: "Budget Confirmed", 
+                    desc: "Prospect has confirmed budget availability and amount matches our pricing"
+                  },
+                  authority: { 
+                    label: "Decision Maker Identified", 
+                    desc: "We know who makes the final decision and have access to them"
+                  },
+                  need: { 
+                    label: "Clear Business Need", 
+                    desc: "Prospect has articulated specific pain points our solution addresses"
+                  },
+                  timeline: { 
+                    label: "Timeline Established", 
+                    desc: "Prospect has provided specific timeline for implementation"
+                  }
+                }).map(([key, info]) => (
+                  <label key={key} className="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={qualifyingLead.qualification?.[key] || false}
+                      onChange={(e) => setQualifyingLead({
+                        ...qualifyingLead,
+                        qualification: {
+                          ...qualifyingLead.qualification,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-900 dark:text-white">{info.label}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">{info.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+              <h3 className="font-medium text-slate-900 dark:text-white mb-3">Additional Qualification Factors</h3>
+              <div className="grid grid-cols-1 gap-3">
+                {Object.entries({
+                  decisionProcess: { 
+                    label: "Decision Process Known", 
+                    desc: "We understand their evaluation process and key stakeholders"
+                  },
+                  competition: { 
+                    label: "Competition Assessed", 
+                    desc: "We know who we're competing against and our competitive position"
+                  },
+                  fit: { 
+                    label: "Good Product Fit", 
+                    desc: "Our solution aligns well with their requirements and use case"
+                  }
+                }).map(([key, info]) => (
+                  <label key={key} className="flex items-start space-x-3 p-3 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-white dark:hover:bg-slate-800 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={qualifyingLead.qualification?.[key] || false}
+                      onChange={(e) => setQualifyingLead({
+                        ...qualifyingLead,
+                        qualification: {
+                          ...qualifyingLead.qualification,
+                          [key]: e.target.checked
+                        }
+                      })}
+                      className="mt-1 rounded border-slate-300 text-primary-600 focus:ring-primary-500"
+                    />
+                    <div className="flex-1">
+                      <div className="font-medium text-slate-900 dark:text-white">{info.label}</div>
+                      <div className="text-sm text-slate-600 dark:text-slate-400">{info.desc}</div>
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-700">
+              <div className="flex items-center space-x-2">
+                <ApperIcon name="Info" className="w-5 h-5 text-blue-600" />
+                <div>
+                  <div className="font-medium text-blue-900 dark:text-blue-100">
+                    Qualification Score: {Object.values(qualifyingLead.qualification || {}).filter(Boolean).length}/7
+                  </div>
+                  <div className="text-sm text-blue-700 dark:text-blue-300">
+                    {Object.values(qualifyingLead.qualification || {}).filter(Boolean).length >= 4 
+                      ? "Well qualified lead - strong conversion potential"
+                      : Object.values(qualifyingLead.qualification || {}).filter(Boolean).length >= 2
+                      ? "Partially qualified - requires further development"
+                      : "Early stage - significant qualification work needed"}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <Button
+              type="button"
+              onClick={() => setShowQualificationModal(false)}
+              className="px-4 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 dark:border-slate-600 dark:text-slate-300 dark:hover:bg-slate-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              className="btn-primary"
+            >
+              Save Qualification
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+)}
 
 const Leads = () => {
   const [leads, setLeads] = useState([])
