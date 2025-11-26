@@ -37,13 +37,14 @@ async create(contactData) {
       throw new Error("Please enter a valid phone number")
     }
     
+const now = new Date().toISOString()
     const newContact = {
       ...contactData,
       Id: Math.max(...contacts.map(c => c.Id)) + 1,
       avatar: contactData.avatar || "",
       tags: contactData.tags || [],
-      createdAt: new Date().toISOString(),
-      lastContactedAt: new Date().toISOString()
+      createdAt: now,
+      lastContactedAt: now
     }
     contacts = [newContact, ...contacts]
     return { ...newContact }
@@ -71,11 +72,13 @@ async update(id, contactData) {
       throw new Error("Please enter a valid phone number")
     }
     
+const now = new Date().toISOString()
     const updatedContact = {
       ...contacts[index],
       ...contactData,
       Id: parseInt(id),
-      updatedAt: new Date().toISOString()
+      updatedAt: now,
+      lastContactedAt: now
     }
     
     contacts[index] = updatedContact

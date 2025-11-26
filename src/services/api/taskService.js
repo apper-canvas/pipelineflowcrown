@@ -21,8 +21,8 @@ export const taskService = {
 
   async create(taskData) {
     await delay(300)
-    const newTask = {
-...taskData,
+const newTask = {
+      ...taskData,
       Id: Math.max(...tasks.map(t => t.Id)) + 1,
       status: taskData.status || "not-started",
       category: taskData.category || "follow-up",

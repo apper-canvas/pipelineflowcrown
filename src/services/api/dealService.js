@@ -22,7 +22,7 @@ export const dealService = {
 async create(dealData) {
     await delay(350)
     const now = new Date().toISOString()
-    const newDeal = {
+const newDeal = {
       ...dealData,
       Id: Math.max(...deals.map(d => d.Id)) + 1,
       amount: parseFloat(dealData.amount) || 0,
@@ -50,7 +50,7 @@ async update(id, dealData) {
     const now = new Date().toISOString()
     const currentDeal = deals[index]
     
-    const updatedDeal = {
+const updatedDeal = {
       ...currentDeal,
       ...dealData,
       Id: parseInt(id),
@@ -95,7 +95,7 @@ async update(id, dealData) {
       duration: 0
     })
     
-    const updatedDeal = {
+const updatedDeal = {
       ...currentDeal,
       stage: newStage,
       stageChangedAt: now,
@@ -142,7 +142,7 @@ async bulkUpdateStage(dealIds, stage) {
           duration: 0
         })
         
-        deals[index] = {
+deals[index] = {
           ...currentDeal,
           stage,
           stageChangedAt: now,

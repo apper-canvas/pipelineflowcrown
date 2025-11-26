@@ -1,15 +1,17 @@
-import React, { Suspense, lazy } from "react"
-import { createBrowserRouter } from "react-router-dom"
-import Layout from "@/components/organisms/Layout"
+import React, { Suspense, lazy } from "react";
+import { createBrowserRouter } from "react-router-dom";
+import Loading from "@/components/ui/Loading";
+import Layout from "@/components/organisms/Layout";
 
-const Dashboard = lazy(() => import("@/components/pages/Dashboard"))
-const Contacts = lazy(() => import("@/components/pages/Contacts"))
-const Leads = lazy(() => import("@/components/pages/Leads"))
-const Deals = lazy(() => import("@/components/pages/Deals"))
-const Tasks = lazy(() => import("@/components/pages/Tasks"))
-const CalendarView = lazy(() => import("@/components/pages/CalendarView"))
-const Analytics = lazy(() => import("@/components/pages/Analytics"))
-const NotFound = lazy(() => import("@/components/pages/NotFound"))
+const Dashboard = lazy(() => import("@/components/pages/Dashboard"));
+const Contacts = lazy(() => import("@/components/pages/Contacts"));
+const Leads = lazy(() => import("@/components/pages/Leads"));
+const Deals = lazy(() => import("@/components/pages/Deals"));
+const Tasks = lazy(() => import("@/components/pages/Tasks"));
+const CalendarView = lazy(() => import("@/components/pages/CalendarView"));
+const Analytics = lazy(() => import("@/components/pages/Analytics"));
+const NotFound = lazy(() => import("@/components/pages/NotFound"));
+const Activities = lazy(() => import("@/components/pages/Activities"));
 
 const LoadingFallback = () => (
   <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-blue-100 dark:from-slate-900 dark:to-slate-800">
@@ -21,8 +23,7 @@ const LoadingFallback = () => (
       <p className="text-slate-600 dark:text-slate-400 font-medium">Loading PipelineFlow...</p>
     </div>
   </div>
-)
-
+);
 const mainRoutes = [
   {
     path: "",
@@ -62,6 +63,14 @@ const mainRoutes = [
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <Tasks />
+      </Suspense>
+    )
+  },
+  {
+    path: "activities",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <Activities />
       </Suspense>
     )
   },

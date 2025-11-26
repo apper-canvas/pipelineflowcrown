@@ -1,8 +1,9 @@
-import React, { useState } from "react"
-import { Outlet } from "react-router-dom"
-import Sidebar from "@/components/organisms/Sidebar"
-import MobileSidebar from "@/components/organisms/MobileSidebar"
-import Header from "@/components/organisms/Header"
+import React, { useState } from "react";
+import { Outlet } from "react-router-dom";
+import ApperIcon from "@/components/ApperIcon";
+import MobileSidebar from "@/components/organisms/MobileSidebar";
+import Header from "@/components/organisms/Header";
+import Sidebar from "@/components/organisms/Sidebar";
 
 const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
