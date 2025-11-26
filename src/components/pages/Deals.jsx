@@ -3,8 +3,6 @@ import { toast } from "react-toastify";
 import { dealService } from "@/services/api/dealService";
 import { contactService } from "@/services/api/contactService";
 import { format } from "date-fns";
-import AssigneeSelector from "@/components/molecules/AssigneeSelector";
-import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -12,6 +10,8 @@ import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
 
 const DealModal = ({ isOpen, deal, onClose, onSave }) => {
 const [formData, setFormData] = useState({
@@ -231,8 +231,49 @@ const Deals = () => {
   const [error, setError] = useState("")
   const [selectedDeal, setSelectedDeal] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
-  const [filterStage, setFilterStage] = useState("all")
+const [filterStage, setFilterStage] = useState("all")
+  
+  // Bulk assignment state
+  const [selectedDeals, setSelectedDeals] = useState([])
+  const [bulkAssigneeId, setBulkAssigneeId] = useState(null)
+  const [isBulkAssigning, setIsBulkAssigning] = useState(false)
 
+  // Handle bulk assignment
+  const handleBulkAssign = async (assigneeId) => {
+    if (selectedDeals.length === 0) {
+      toast.error("No deals selected for assignment")
+      return
+    }
+    
+    setIsBulkAssigning(true)
+    try {
+      const result = await dealService.bulkAssign(selectedDeals, assigneeId)
+      
+      // Refresh data
+      await loadDeals()
+      
+      // Clear selection
+      setSelectedDeals([])
+      setBulkAssigneeId(null)
+      
+      const assigneeName = assigneeId ? 'Selected assignee' : 'Unassigned'
+      toast.success(`Successfully assigned ${result.updated} deal${result.updated !== 1 ? 's' : ''} to ${assigneeName}`)
+    } catch (error) {
+      console.error("Bulk assignment error:", error)
+      toast.error(error.message || "Failed to assign deals")
+    } finally {
+      setIsBulkAssigning(false)
+    }
+  }
+
+  // Handle deal selection
+  const handleDealSelection = (dealId, checked) => {
+    setSelectedDeals(prev => 
+      checked 
+        ? [...prev, dealId]
+        : prev.filter(id => id !== dealId)
+    )
+  }
   const stages = [
     { id: "new", label: "New", color: "bg-blue-500" },
     { id: "qualified", label: "Qualified", color: "bg-amber-500" },
@@ -341,6 +382,37 @@ const handleStageChange = async (dealId, newStage) => {
         toast.error("Failed to delete deal")
       }
     }
+}
+
+  // Bulk assignment toolbar
+  const BulkAssignmentToolbar = () => {
+    if (selectedDeals.length === 0) return null
+
+    return (
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-primary-900">
+            {selectedDeals.length} deal{selectedDeals.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center space-x-3">
+            <AssigneeSelector
+              value={bulkAssigneeId}
+              onChange={handleBulkAssign}
+              placeholder="Assign to..."
+              bulkMode={true}
+              className="w-64"
+            />
+            <Button
+              onClick={() => setSelectedDeals([])}
+              variant="secondary"
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const getStageColor = (stage) => {
@@ -428,7 +500,7 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
           </button>
         ))}
 </div>
-      
+<BulkAssignmentToolbar />
 
       {/* Deals Display */}
       {filteredDeals.length === 0 ? (
@@ -449,7 +521,17 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
             const totalDealAge = getTotalDealAge(deal)
             
             return (
-            <div key={deal.Id} className="card hover:shadow-lg transition-all duration-200 group">
+              <div key={deal.Id} className="card hover:shadow-lg transition-all duration-200 group relative">
+                {/* Selection Checkbox */}
+                <div className="absolute top-4 left-4 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedDeals.includes(deal.Id)}
+                    onChange={(e) => handleDealSelection(deal.Id, e.target.checked)}
+                    className="rounded border-gray-300 focus:ring-primary-500"
+                  />
+                </div>
+                <div className="ml-8">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
                   <div className="flex items-center space-x-2 mb-2">
@@ -556,9 +638,32 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
                   ></div>
                 </div>
 </div>
+
+              {/* Deal Owner Assignment Display */}
+              {deal.dealOwner && (
+                <div className="mt-3 flex items-center space-x-2">
+                  <AssigneeDisplay assignee={deal.dealOwner} />
+                </div>
+              )}
+            </div>
             </div>
           )
         })}
+        </div>
+      )}
+
+{/* Bulk Assignment Progress Indicator */}
+      {isBulkAssigning && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+            <div className="flex items-center space-x-3">
+              <div className="animate-spin h-6 w-6 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+              <div>
+                <h3 className="font-medium">Assigning Deals</h3>
+                <p className="text-sm text-gray-500">Please wait while we assign {selectedDeals.length} deal{selectedDeals.length !== 1 ? 's' : ''}...</p>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 

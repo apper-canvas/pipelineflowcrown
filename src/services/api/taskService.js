@@ -90,5 +90,48 @@ const now = new Date().toISOString()
     await delay(200)
     tasks = tasks.filter(t => t.Id !== parseInt(id))
     return true
+},
+
+  async bulkAssign(taskIds, assigneeId) {
+    await delay(400)
+    const now = new Date().toISOString()
+    const idsToUpdate = taskIds.map(id => parseInt(id))
+    
+    // Validate assignee exists (basic validation)
+    if (assigneeId !== null && (typeof assigneeId !== 'number' || assigneeId <= 0)) {
+      throw new Error("Invalid assignee selected")
+    }
+    
+    let updatedCount = 0
+    tasks = tasks.map(task => {
+      if (idsToUpdate.includes(task.Id)) {
+        const previousAssignee = task.assignedTo
+        const assignmentChanged = assigneeId !== previousAssignee
+        
+        if (assignmentChanged) {
+          const currentHistory = task.assignmentHistory || []
+          const newHistoryEntry = {
+            assignedTo: assigneeId,
+            assignedAt: now,
+            assignedBy: 1, // Current user
+            previousAssignee: previousAssignee,
+            status: assigneeId ? 'active' : 'unassigned',
+            bulkAssignment: true
+          }
+          
+          updatedCount++
+          return {
+            ...task,
+            assignedTo: assigneeId,
+            assignedAt: assigneeId ? now : null,
+            assignmentHistory: [...currentHistory, newHistoryEntry],
+            updatedAt: now
+          }
+        }
+      }
+      return task
+    })
+    
+    return { updated: updatedCount, total: idsToUpdate.length }
   }
 }

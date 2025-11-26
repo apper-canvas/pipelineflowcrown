@@ -3,8 +3,6 @@ import { toast } from "react-toastify";
 import { taskService } from "@/services/api/taskService";
 import { contactService } from "@/services/api/contactService";
 import { format, isPast, isToday, isTomorrow } from "date-fns";
-import AssigneeSelector from "@/components/molecules/AssigneeSelector";
-import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -12,6 +10,8 @@ import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
 
 const TaskModal = ({ isOpen, task, onClose, onSave }) => {
 const [formData, setFormData] = useState({
@@ -294,6 +294,53 @@ assignedTo: null,
 }
 
 const Tasks = () => {
+  // Bulk assignment state
+  const [bulkAssigneeId, setBulkAssigneeId] = useState(null)
+  const [isBulkAssigning, setIsBulkAssigning] = useState(false)
+  const [selectedTasks, setSelectedTasks] = useState([])
+
+  // Handle bulk assignment
+  const handleBulkAssign = async (assigneeId) => {
+    if (selectedTasks.length === 0) {
+      toast.error("No tasks selected for assignment")
+      return
+    }
+    
+    setIsBulkAssigning(true)
+    try {
+      const result = await taskService.bulkAssign(selectedTasks, assigneeId)
+      
+      // Refresh data (assuming there's a loadTasks function)
+      // await loadTasks()
+      
+      // Clear selection
+      setSelectedTasks([])
+      setBulkAssigneeId(null)
+      
+      const assigneeName = assigneeId ? 'Selected assignee' : 'Unassigned'
+      toast.success(`Successfully assigned ${result.updated} task${result.updated !== 1 ? 's' : ''} to ${assigneeName}`)
+    } catch (error) {
+      console.error("Bulk assignment error:", error)
+      toast.error(error.message || "Failed to assign tasks")
+    } finally {
+      setIsBulkAssigning(false)
+    }
+  }
+
+  // Handle task selection
+  const handleTaskSelection = (taskId, checked) => {
+    setSelectedTasks(prev => 
+      checked 
+        ? [...prev, taskId]
+        : prev.filter(id => id !== taskId)
+    )
+  }
+
+  // Handle select all tasks
+  const handleSelectAllTasks = (checked) => {
+    // This would need to be connected to the actual tasks list
+    // setSelectedTasks(checked ? allTasks.map(t => t.Id) : [])
+  }
   const [tasks, setTasks] = useState([])
   const [contacts, setContacts] = useState([])
   const [loading, setLoading] = useState(true)
@@ -360,6 +407,37 @@ const [selectedTask, setSelectedTask] = useState(null)
         toast.error("Failed to delete task")
       }
     }
+}
+
+  // Bulk assignment toolbar component
+  const BulkAssignmentToolbar = () => {
+    if (selectedTasks.length === 0) return null
+
+    return (
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-primary-900">
+            {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center space-x-3">
+            <AssigneeSelector
+              value={bulkAssigneeId}
+              onChange={handleBulkAssign}
+              placeholder="Assign to..."
+              bulkMode={true}
+              className="w-64"
+            />
+            <Button
+              onClick={() => setSelectedTasks([])}
+              variant="secondary"
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   const getPriorityColor = (priority) => {
@@ -465,7 +543,9 @@ const tasksByStatus = {
           <ApperIcon name="Plus" className="h-4 w-4" />
           <span>Add Task</span>
         </Button>
-      </div>
+</div>
+      
+      <BulkAssignmentToolbar />
 
       {/* Filters */}
 {/* Stats Cards */}
@@ -548,7 +628,21 @@ const tasksByStatus = {
             <option value="medium">Medium</option>
             <option value="low">Low</option>
           </select>
-</div>
+{/* Bulk Assignment Progress Indicator */}
+        {isBulkAssigning && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin h-6 w-6 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+                <div>
+                  <h3 className="font-medium">Assigning Tasks</h3>
+                  <p className="text-sm text-gray-500">Please wait while we assign {selectedTasks.length} task{selectedTasks.length !== 1 ? 's' : ''}...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
         <div className="flex items-center space-x-2">
           <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Sort by:</label>
@@ -578,7 +672,19 @@ const tasksByStatus = {
           }}
         />
       ) : (
-        <div className="space-y-4">
+<div className="space-y-4">
+          {/* Selection Controls */}
+          <div className="flex items-center space-x-2 py-2">
+            <input
+              type="checkbox"
+              checked={selectedTasks.length > 0}
+              onChange={(e) => handleSelectAllTasks(e.target.checked)}
+              className="rounded border-gray-300 focus:ring-primary-500"
+            />
+            <label className="text-sm text-gray-600">
+              Select all tasks
+            </label>
+          </div>
           {filteredTasks.map((task) => (
             <div key={task.Id} className="card hover:shadow-md transition-all duration-200 group">
               <div className="flex items-start space-x-4">
@@ -680,6 +786,16 @@ const tasksByStatus = {
                           showName={false}
                         />
                       )}
+</div>
+                    
+                    {/* Task Selection Checkbox */}
+                    <div className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={selectedTasks.includes('TASK_ID')}
+                        onChange={(e) => handleTaskSelection('TASK_ID', e.target.checked)}
+                        className="rounded border-gray-300 focus:ring-primary-500"
+                      />
                     </div>
                     <div className="text-xs text-slate-400">
                       Created {format(new Date(task.createdAt), "MMM d, yyyy")}

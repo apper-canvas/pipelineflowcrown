@@ -2,8 +2,6 @@ import React, { useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import { leadService } from "@/services/api/leadService";
 import { format } from "date-fns";
-import AssigneeSelector from "@/components/molecules/AssigneeSelector";
-import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -11,6 +9,8 @@ import Empty from "@/components/ui/Empty";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Badge from "@/components/atoms/Badge";
+import AssigneeDisplay from "@/components/molecules/AssigneeDisplay";
+import AssigneeSelector from "@/components/molecules/AssigneeSelector";
 
 const LeadModal = ({ isOpen, lead, onClose, onSave }) => {
 const [formData, setFormData] = useState({
@@ -335,8 +335,50 @@ const Leads = () => {
   const [leads, setLeads] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState("")
-  const [selectedLead, setSelectedLead] = useState(null)
+const [selectedLead, setSelectedLead] = useState(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
+  
+  // Bulk assignment state
+  const [selectedLeads, setSelectedLeads] = useState([])
+  const [bulkAssigneeId, setBulkAssigneeId] = useState(null)
+  const [isBulkAssigning, setIsBulkAssigning] = useState(false)
+
+  // Handle bulk assignment
+  const handleBulkAssign = async (assigneeId) => {
+    if (selectedLeads.length === 0) {
+      toast.error("No leads selected for assignment")
+      return
+    }
+    
+    setIsBulkAssigning(true)
+    try {
+      const result = await leadService.bulkAssign(selectedLeads, assigneeId)
+      
+      // Refresh data
+      await loadLeads()
+      
+      // Clear selection
+      setSelectedLeads([])
+      setBulkAssigneeId(null)
+      
+      const assigneeName = assigneeId ? 'Selected assignee' : 'Unassigned'
+      toast.success(`Successfully assigned ${result.updated} lead${result.updated !== 1 ? 's' : ''} to ${assigneeName}`)
+    } catch (error) {
+      console.error("Bulk assignment error:", error)
+      toast.error(error.message || "Failed to assign leads")
+    } finally {
+      setIsBulkAssigning(false)
+    }
+  }
+
+  // Handle lead selection
+  const handleLeadSelection = (leadId, checked) => {
+    setSelectedLeads(prev => 
+      checked 
+        ? [...prev, leadId]
+        : prev.filter(id => id !== leadId)
+    )
+  }
   const [filterStage, setFilterStage] = useState("all")
 
 const stages = [
@@ -372,7 +414,36 @@ const stages = [
       setLeads([savedLead, ...leads])
     }
   }
+// Bulk assignment toolbar
+  const BulkAssignmentToolbar = () => {
+    if (selectedLeads.length === 0) return null
 
+    return (
+      <div className="bg-primary-50 border border-primary-200 rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-primary-900">
+            {selectedLeads.length} lead{selectedLeads.length !== 1 ? 's' : ''} selected
+          </span>
+          <div className="flex items-center space-x-3">
+            <AssigneeSelector
+              value={bulkAssigneeId}
+              onChange={handleBulkAssign}
+              placeholder="Assign to..."
+              bulkMode={true}
+              className="w-64"
+            />
+            <Button
+              onClick={() => setSelectedLeads([])}
+              variant="secondary"
+              size="sm"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    )
+  }
 const handleStageChange = async (leadId, newStage) => {
     try {
       const lead = leads.find(l => l.Id === leadId)
@@ -459,7 +530,9 @@ return (
         >
           <ApperIcon name="Plus" className="h-4 w-4" />
           <span>Add Lead</span>
-        </Button>
+</Button>
+        
+        <BulkAssignmentToolbar />
       </div>
 
 {/* Pipeline Overview */}
@@ -532,7 +605,17 @@ return (
               return 'Cold'
             }
 
-            return (
+return (
+              <div className="relative">
+                {/* Selection Checkbox */}
+                <div className="absolute top-4 left-4 z-10">
+                  <input
+                    type="checkbox"
+                    checked={selectedLeads.includes(lead.Id)}
+                    onChange={(e) => handleLeadSelection(lead.Id, e.target.checked)}
+                    className="rounded border-gray-300 focus:ring-primary-500"
+                  />
+                </div>
 <div key={lead.Id} className="card hover:shadow-lg transition-all duration-200 group">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
@@ -686,11 +769,26 @@ return (
               </div>
             )
           })}
-        </div>
+</div>
       )}
 
       {/* Lead Modal */}
-<LeadModal
+      {/* Bulk Assignment Progress Indicator */}
+        {isBulkAssigning && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin h-6 w-6 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+                <div>
+                  <h3 className="font-medium">Assigning Leads</h3>
+                  <p className="text-sm text-gray-500">Please wait while we assign {selectedLeads.length} lead{selectedLeads.length !== 1 ? 's' : ''}...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+)}
+
+      <LeadModal
         isOpen={isModalOpen}
         lead={selectedLead}
         onClose={() => {

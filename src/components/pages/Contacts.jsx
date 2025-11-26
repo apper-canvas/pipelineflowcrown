@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { contactService } from "@/services/api/contactService";
 import { format } from "date-fns";
 import { activityService } from "@/services/api/activityService";
+import { teamMemberService } from "@/services/api/teamMemberService";
 import ApperIcon from "@/components/ApperIcon";
 import Loading from "@/components/ui/Loading";
 import ErrorView from "@/components/ui/ErrorView";
@@ -344,7 +345,47 @@ const handleBulkDelete = async () => {
       setIsDeleting(false);
     }
   };
+// Bulk assignment handlers
+  const [bulkAssigneeId, setBulkAssigneeId] = useState(null)
+  const [isBulkAssigning, setIsBulkAssigning] = useState(false)
 
+  const handleBulkAssign = async (assigneeId) => {
+    if (selectedContacts.length === 0) {
+      toast.error("No contacts selected for assignment")
+      return
+    }
+    
+    setIsBulkAssigning(true)
+    try {
+      const result = await contactService.bulkAssign(selectedContacts, assigneeId)
+      
+      // Refresh data
+      await loadContacts()
+      
+      // Clear selection
+      setSelectedContacts([])
+      setBulkAssigneeId(null)
+      
+let assigneeName = 'Unassigned';
+      if (assigneeId) {
+        try {
+          const teamMembers = await teamMemberService.getAll();
+          const assignee = teamMembers.find(m => m.Id === assigneeId);
+          assigneeName = assignee?.name || 'Selected assignee';
+        } catch (error) {
+          console.error('Failed to get assignee name:', error);
+          assigneeName = 'Selected assignee';
+        }
+      }
+      
+      toast.success(`Successfully assigned ${result.updated} contact${result.updated !== 1 ? 's' : ''} to ${assigneeName}`)
+    } catch (error) {
+      console.error("Bulk assignment error:", error)
+      toast.error(error.message || "Failed to assign contacts")
+    } finally {
+      setIsBulkAssigning(false)
+    }
+  }
 
 const handleSelectContact = (contactId) => {
     setSelectedContacts(prev => 
@@ -518,11 +559,20 @@ if (loading) return <Loading type="skeleton" />;
           <div className="flex items-center space-x-4">
             <span className="text-sm font-medium text-blue-700">
               {selectedContacts.length} contact(s) selected
-            </span>
-            <div className="flex items-center space-x-2">
+</span>
+            <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-2">
+                <AssigneeSelector
+                  value={bulkAssigneeId}
+                  onChange={handleBulkAssign}
+                  placeholder="Assign to..."
+                  bulkMode={true}
+                  className="w-64"
+                />
+              </div>
               <Button
                 onClick={handleBulkDelete}
-                disabled={isDeleting}
+                disabled={isDeleting || isBulkAssigning}
                 variant="secondary"
                 size="sm"
                 className="text-red-600 hover:text-red-700"
@@ -1348,7 +1398,20 @@ onClose={() => {
           </div>
         </div>
       )}
-
+{/* Bulk Assignment Progress Indicator */}
+        {isBulkAssigning && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4">
+              <div className="flex items-center space-x-3">
+                <div className="animate-spin h-6 w-6 border-2 border-primary-500 border-t-transparent rounded-full"></div>
+                <div>
+                  <h3 className="font-medium">Assigning Contacts</h3>
+                  <p className="text-sm text-gray-500">Please wait while we assign {selectedContacts.length} contact{selectedContacts.length !== 1 ? 's' : ''}...</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 {/* Delete Confirmation Modal */}
       <DeleteConfirmModal
         isOpen={deleteModal.isOpen}

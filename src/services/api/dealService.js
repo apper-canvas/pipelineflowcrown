@@ -291,5 +291,48 @@ deals[index] = {
     }
     
     return deal.stageHistory || []
+},
+
+  async bulkAssign(dealIds, assigneeId) {
+    await delay(400)
+    const now = new Date().toISOString()
+    const idsToUpdate = dealIds.map(id => parseInt(id))
+    
+    // Validate assignee exists (basic validation)
+    if (assigneeId !== null && (typeof assigneeId !== 'number' || assigneeId <= 0)) {
+      throw new Error("Invalid assignee selected")
+    }
+    
+    let updatedCount = 0
+    deals = deals.map(deal => {
+      if (idsToUpdate.includes(deal.Id)) {
+        const previousOwner = deal.dealOwner
+        const assignmentChanged = assigneeId !== previousOwner
+        
+        if (assignmentChanged) {
+          const currentHistory = deal.assignmentHistory || []
+          const newHistoryEntry = {
+            assignedTo: assigneeId,
+            assignedAt: now,
+            assignedBy: 1, // Current user
+            previousAssignee: previousOwner,
+            status: assigneeId ? 'active' : 'unassigned',
+            bulkAssignment: true
+          }
+          
+          updatedCount++
+          return {
+            ...deal,
+            dealOwner: assigneeId,
+            assignedAt: assigneeId ? now : null,
+            assignmentHistory: [...currentHistory, newHistoryEntry],
+            updatedAt: now
+          }
+        }
+      }
+      return deal
+    })
+    
+    return { updated: updatedCount, total: idsToUpdate.length }
   }
 }

@@ -158,5 +158,49 @@ async exportToCsv() {
     ].join('\n')
     
     return csvData
+},
+
+  async bulkAssign(contactIds, assigneeId) {
+    await delay(400)
+    const now = new Date().toISOString()
+    const idsToUpdate = contactIds.map(id => parseInt(id))
+    
+    // Validate assignee exists (basic validation)
+    if (assigneeId !== null && (typeof assigneeId !== 'number' || assigneeId <= 0)) {
+      throw new Error("Invalid assignee selected")
+    }
+    
+    let updatedCount = 0
+    contacts = contacts.map(contact => {
+      if (idsToUpdate.includes(contact.Id)) {
+        const previousAssignee = contact.assignedTo
+        const assignmentChanged = assigneeId !== previousAssignee
+        
+        if (assignmentChanged) {
+          const currentHistory = contact.assignmentHistory || []
+          const newHistoryEntry = {
+            assignedTo: assigneeId,
+            assignedAt: now,
+            assignedBy: 1, // Current user
+            previousAssignee: previousAssignee,
+            status: assigneeId ? 'active' : 'unassigned',
+            bulkAssignment: true
+          }
+          
+          updatedCount++
+          return {
+            ...contact,
+            assignedTo: assigneeId,
+            assignedAt: assigneeId ? now : null,
+            assignmentHistory: [...currentHistory, newHistoryEntry],
+            updatedAt: now,
+            lastContactedAt: now
+          }
+        }
+      }
+      return contact
+    })
+    
+    return { updated: updatedCount, total: idsToUpdate.length }
   }
 }
