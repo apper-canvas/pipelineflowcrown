@@ -282,12 +282,13 @@ const formatActivityTime = (dateString) => {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-2">
 <div className="flex items-center space-x-2">
-                      <Badge variant="default" size="sm">
-<span className={`px-2 py-1 rounded-full text-xs font-medium border ${getActivityBadgeColor(activity.type)}`}>
-                          {activityTypes.find(t => t.value === activity.type)?.label || activity.type}
-                        </span>
-                      </Badge>
-                    </div>
+                      <div className="flex items-center space-x-2">
+                        <Badge variant="default" size="sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getActivityBadgeColor(activity.type)}`}>
+                            {activityTypes.find(t => t.value === activity.type)?.label || activity.type}
+                          </span>
+                        </Badge>
+                      </div>
                       {activity.priority && (
                         <Badge
                           variant="secondary"
@@ -411,9 +412,9 @@ const formatActivityTime = (dateString) => {
         />
       )}
     </div>
-  )
+)
 
-async function handleSaveActivity(activityData) {
+  async function handleSaveActivity(activityData) {
     try {
       setIsSubmitting(true)
       
