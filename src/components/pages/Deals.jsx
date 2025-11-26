@@ -533,9 +533,10 @@ const totalPipelineValue = deals.reduce((sum, deal) => sum + ((parseFloat(deal.a
                     style={{ width: `${deal.probability}%` }}
                   ></div>
                 </div>
-              </div>
+</div>
             </div>
-          ))}
+          )
+        })}
         </div>
       )}
 
