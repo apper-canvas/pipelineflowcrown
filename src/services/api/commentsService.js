@@ -4,7 +4,36 @@ import commentsData from '../mockData/comments.json'
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms))
 
 // Mock data store
-let comments = [...commentsData]
+let comments = [...commentsData.map(comment => ({
+  ...comment,
+  topic: comment.topic || extractTopicFromContent(comment.content)
+}))]
+
+// Topic extraction utility
+const extractTopicFromContent = (content) => {
+  // Extract hashtags
+  const hashtagMatch = content.match(/#(\w+)/g)
+  if (hashtagMatch) return hashtagMatch[0].slice(1).toLowerCase()
+  
+  // Look for common topic indicators
+  const topicKeywords = {
+    'technical': ['technical', 'implementation', 'code', 'api', 'bug', 'error', 'development'],
+    'design': ['design', 'ui', 'ux', 'mockup', 'prototype', 'visual', 'interface'],
+    'planning': ['planning', 'roadmap', 'timeline', 'schedule', 'deadline', 'milestone'],
+    'review': ['review', 'feedback', 'approve', 'changes', 'revision', 'comments'],
+    'question': ['question', 'help', 'how', 'what', 'why', 'when', '?', 'confused'],
+    'urgent': ['urgent', 'asap', 'priority', 'critical', 'blocking', 'important']
+  }
+  
+  const lowerContent = content.toLowerCase()
+  for (const [topic, keywords] of Object.entries(topicKeywords)) {
+    if (keywords.some(keyword => lowerContent.includes(keyword))) {
+      return topic
+    }
+  }
+  
+  return 'general'
+}
 
 export const commentsService = {
   async getByTaskId(taskId) {
@@ -25,7 +54,7 @@ export const commentsService = {
   async create(commentData) {
     await delay(300)
     const now = new Date().toISOString()
-    const newComment = {
+const newComment = {
       ...commentData,
       Id: Math.max(...comments.map(c => c.Id), 0) + 1,
       createdAt: now,
@@ -39,7 +68,8 @@ export const commentsService = {
       isResolved: false,
       attachments: commentData.attachments || [],
       mentions: commentData.mentions || [],
-      isUnread: false
+      isUnread: false,
+      topic: commentData.topic || extractTopicFromContent(commentData.content)
     }
     
     comments.push(newComment)
@@ -67,12 +97,13 @@ export const commentsService = {
     }
 
     const updatedComment = {
-      ...originalComment,
+...originalComment,
       ...commentData,
       Id: parseInt(id),
       updatedAt: now,
       editHistory,
-      isEdited: commentData.content && commentData.content !== originalComment.content
+      isEdited: commentData.content && commentData.content !== originalComment.content,
+      topic: commentData.content ? extractTopicFromContent(commentData.content) : originalComment.topic
     }
     
     comments[index] = updatedComment
@@ -87,13 +118,23 @@ export const commentsService = {
     }
     
     // Also delete all replies to this comment
-    const commentToDelete = comments[index]
+const commentToDelete = comments[index]
     const repliesToDelete = comments.filter(c => c.parentCommentId === commentToDelete.Id)
     
-    comments = comments.filter(c => 
-      c.Id !== parseInt(id) && 
-      c.parentCommentId !== parseInt(id)
-    )
+    // Recursively find all nested replies
+    const findAllReplies = (parentId) => {
+      const directReplies = comments.filter(c => c.parentCommentId === parentId)
+      let allReplies = [...directReplies]
+      directReplies.forEach(reply => {
+        allReplies = [...allReplies, ...findAllReplies(reply.Id)]
+      })
+      return allReplies
+    }
+    
+    const allRepliesToDelete = findAllReplies(parseInt(id))
+    const idsToDelete = [parseInt(id), ...allRepliesToDelete.map(c => c.Id)]
+    
+    comments = comments.filter(c => !idsToDelete.includes(c.Id))
     
     return { deleted: 1 + repliesToDelete.length }
   },
@@ -224,7 +265,7 @@ export const commentsService = {
   },
 
   async search(taskId, query) {
-    await delay(200)
+await delay(200)
     const taskComments = comments.filter(c => c.taskId === parseInt(taskId))
     
     if (!query.trim()) {
@@ -233,10 +274,33 @@ export const commentsService = {
 
     const filtered = taskComments.filter(comment => 
       comment.content.toLowerCase().includes(query.toLowerCase()) ||
-      comment.authorName.toLowerCase().includes(query.toLowerCase())
+      comment.authorName.toLowerCase().includes(query.toLowerCase()) ||
+      (comment.topic && comment.topic.toLowerCase().includes(query.toLowerCase()))
     )
 
     return filtered.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  },
+
+  // Get comments by topic
+  async getCommentsByTopic(taskId, topic) {
+    await delay(200)
+    return comments
+      .filter(c => c.taskId === parseInt(taskId) && (c.topic === topic || extractTopicFromContent(c.content) === topic))
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
+  },
+
+  // Get available topics for a task
+  async getTopicsForTask(taskId) {
+    await delay(200)
+    const taskComments = comments.filter(c => c.taskId === parseInt(taskId))
+    const topics = new Set()
+    
+    taskComments.forEach(comment => {
+      const topic = comment.topic || extractTopicFromContent(comment.content)
+      topics.add(topic)
+    })
+    
+    return Array.from(topics).sort()
   },
 
   async getCommentCount(taskId) {

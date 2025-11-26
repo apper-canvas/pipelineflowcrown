@@ -11,7 +11,8 @@ import RichTextEditor from '@/components/molecules/RichTextEditor'
 
 const CommentsPanel = ({ taskId }) => {
   const [comments, setComments] = useState([])
-  const [loading, setLoading] = useState(true)
+const [loading, setLoading] = useState(true)
+  const [selectedTopic, setSelectedTopic] = useState("all")
   const [error, setError] = useState("")
   const [newComment, setNewComment] = useState("")
   const [searchQuery, setSearchQuery] = useState("")
@@ -72,13 +73,14 @@ const CommentsPanel = ({ taskId }) => {
 
     setSubmitting(true)
     try {
-      const commentData = {
+const commentData = {
         taskId: parseInt(taskId),
         authorId: currentUserId,
         authorName: "Current User", // This would come from auth context
         authorAvatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=32&h=32&fit=crop&crop=face&faceindex=1",
         content: newComment,
         parentCommentId: replyingTo?.Id || null,
+        topic: extractTopicFromContent(newComment) || (replyingTo ? replyingTo.topic : null),
         mentions: extractMentions(newComment),
         attachments: []
       }
@@ -133,6 +135,43 @@ const CommentsPanel = ({ taskId }) => {
     setNewComment(prev => prev + `> ${comment.content}\n\n`)
   }
 
+const extractTopicFromContent = (content) => {
+    // Extract hashtags or keywords that might indicate topics
+    const hashtagMatch = content.match(/#(\w+)/g)
+    if (hashtagMatch) return hashtagMatch[0].slice(1)
+    
+    // Look for common topic indicators
+    const topicKeywords = {
+      'technical': ['technical', 'implementation', 'code', 'api', 'bug', 'error'],
+      'design': ['design', 'ui', 'ux', 'mockup', 'prototype', 'visual'],
+      'planning': ['planning', 'roadmap', 'timeline', 'schedule', 'deadline'],
+      'review': ['review', 'feedback', 'approve', 'changes', 'revision'],
+      'question': ['question', 'help', 'how', 'what', 'why', 'when', '?'],
+      'urgent': ['urgent', 'asap', 'priority', 'critical', 'blocking']
+    }
+    
+    const lowerContent = content.toLowerCase()
+    for (const [topic, keywords] of Object.entries(topicKeywords)) {
+      if (keywords.some(keyword => lowerContent.includes(keyword))) {
+        return topic
+      }
+    }
+    
+    return 'general'
+  }
+
+  // Get unique topics from comments
+  const getAvailableTopics = (comments) => {
+    const topics = new Set()
+    comments.forEach(comment => {
+      const topic = comment.topic || extractTopicFromContent(comment.content)
+      topics.add(topic)
+    })
+    return Array.from(topics).sort()
+  }
+
+  const availableTopics = getAvailableTopics(comments)
+
   const filteredAndSortedComments = comments
     .filter(comment => {
       const matchesSearch = !searchQuery || 
@@ -143,7 +182,10 @@ const CommentsPanel = ({ taskId }) => {
         (filterResolved === "resolved" && comment.isResolved) ||
         (filterResolved === "unresolved" && !comment.isResolved)
       
-      return matchesSearch && matchesFilter
+      const commentTopic = comment.topic || extractTopicFromContent(comment.content)
+      const matchesTopic = selectedTopic === "all" || commentTopic === selectedTopic
+      
+      return matchesSearch && matchesFilter && matchesTopic
     })
     .sort((a, b) => {
       const dateA = new Date(a.createdAt)
@@ -151,32 +193,70 @@ const CommentsPanel = ({ taskId }) => {
       return sortOrder === "asc" ? dateA - dateB : dateB - dateA
     })
 
-  const organizeComments = (comments) => {
+const organizeComments = (comments) => {
     const commentMap = new Map()
     const rootComments = []
+    const topicGroups = new Map()
 
-    // First pass: create comment map and identify root comments
+    // First pass: create comment map, assign topics, and identify root comments
     comments.forEach(comment => {
-      commentMap.set(comment.Id, { ...comment, replies: [] })
+      const topic = comment.topic || extractTopicFromContent(comment.content)
+      const enrichedComment = { ...comment, topic, replies: [] }
+      commentMap.set(comment.Id, enrichedComment)
+      
       if (!comment.parentCommentId) {
         rootComments.push(comment.Id)
+        
+        // Group by topic
+        if (!topicGroups.has(topic)) {
+          topicGroups.set(topic, [])
+        }
+        topicGroups.get(topic).push(comment.Id)
       }
     })
 
     // Second pass: organize replies under their parents
     comments.forEach(comment => {
       if (comment.parentCommentId && commentMap.has(comment.parentCommentId)) {
-        commentMap.get(comment.parentCommentId).replies.push(commentMap.get(comment.Id))
+        const parentComment = commentMap.get(comment.parentCommentId)
+        const childComment = commentMap.get(comment.Id)
+        
+        // Inherit topic from parent if not explicitly set
+        if (!childComment.topic || childComment.topic === 'general') {
+          childComment.topic = parentComment.topic
+        }
+        
+        parentComment.replies.push(childComment)
       }
     })
 
-    return rootComments.map(id => commentMap.get(id)).filter(Boolean)
+    // Sort root comments by topic, then by creation time
+    const sortedRootComments = rootComments
+      .map(id => commentMap.get(id))
+      .filter(Boolean)
+      .sort((a, b) => {
+        // First sort by topic
+        if (a.topic !== b.topic) {
+          return a.topic.localeCompare(b.topic)
+        }
+        // Then by creation time
+        return new Date(a.createdAt) - new Date(b.createdAt)
+      })
+
+    return sortedRootComments
   }
 
-  const organizedComments = organizeComments(filteredAndSortedComments)
+const organizedComments = organizeComments(filteredAndSortedComments)
   const pinnedComments = organizedComments.filter(c => c.isPinned)
   const regularComments = organizedComments.filter(c => !c.isPinned)
 
+  // Group regular comments by topic for better organization
+  const commentsByTopic = regularComments.reduce((acc, comment) => {
+    const topic = comment.topic || 'general'
+    if (!acc[topic]) acc[topic] = []
+    acc[topic].push(comment)
+    return acc
+  }, {})
   const commentCount = comments.length
   const unreadCount = comments.filter(c => c.isUnread && c.authorId !== currentUserId).length
 
@@ -253,11 +333,27 @@ const CommentsPanel = ({ taskId }) => {
 
       {/* Comments list */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+{/* Topic Filter */}
+        <div className="mb-4">
+          <select
+            value={selectedTopic}
+            onChange={(e) => setSelectedTopic(e.target.value)}
+            className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="all">All Topics</option>
+            {availableTopics.map(topic => (
+              <option key={topic} value={topic}>
+                {topic.charAt(0).toUpperCase() + topic.slice(1)}
+              </option>
+            ))}
+          </select>
+        </div>
+
         {organizedComments.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-32 text-slate-500">
             <ApperIcon name="MessageCircle" className="h-12 w-12 mb-2 opacity-50" />
             <p className="text-sm">
-              {searchQuery || filterResolved !== "all" 
+              {searchQuery || filterResolved !== "all" || selectedTopic !== "all"
                 ? "No comments match your filters" 
                 : "No comments yet. Start the discussion!"
               }
@@ -277,29 +373,60 @@ const CommentsPanel = ({ taskId }) => {
                 onReply={handleReply}
                 onQuote={handleQuote}
                 isPinned={true}
+                showTopic={true}
               />
             ))}
             
-            {/* Regular comments */}
-            {regularComments.map(comment => (
-              <CommentItem
-                key={comment.Id}
-                comment={comment}
-                currentUserId={currentUserId}
-                teamMembers={teamMembers}
-                onUpdate={handleCommentUpdate}
-                onDelete={handleCommentDelete}
-                onReply={handleReply}
-                onQuote={handleQuote}
-              />
-            ))}
+            {/* Comments organized by topic */}
+            {selectedTopic === "all" ? (
+              Object.entries(commentsByTopic).map(([topic, topicComments]) => (
+                <div key={topic} className="mb-6">
+                  <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100">
+                    <div className={`w-3 h-3 rounded-full topic-indicator topic-${topic}`}></div>
+                    <h4 className="text-sm font-medium text-slate-700 capitalize">
+                      {topic} Discussion
+                    </h4>
+                    <span className="text-xs text-slate-500">
+                      {topicComments.length} comment{topicComments.length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  {topicComments.map(comment => (
+                    <CommentItem
+                      key={comment.Id}
+                      comment={comment}
+                      currentUserId={currentUserId}
+                      teamMembers={teamMembers}
+                      onUpdate={handleCommentUpdate}
+                      onDelete={handleCommentDelete}
+                      onReply={handleReply}
+                      onQuote={handleQuote}
+                      showTopic={false}
+                    />
+                  ))}
+                </div>
+              ))
+            ) : (
+              regularComments.map(comment => (
+                <CommentItem
+                  key={comment.Id}
+                  comment={comment}
+                  currentUserId={currentUserId}
+                  teamMembers={teamMembers}
+                  onUpdate={handleCommentUpdate}
+                  onDelete={handleCommentDelete}
+                  onReply={handleReply}
+                  onQuote={handleQuote}
+                  showTopic={true}
+                />
+              ))
+            )}
           </>
         )}
         <div ref={commentsEndRef} />
       </div>
 
       {/* Reply indicator */}
-      {replyingTo && (
+{replyingTo && (
         <div className="px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border-t border-slate-200 dark:border-slate-700">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
@@ -324,10 +451,10 @@ const CommentsPanel = ({ taskId }) => {
       {/* Comment input */}
       <div className="p-4 border-t border-slate-200 dark:border-slate-700">
         <form onSubmit={handleSubmitComment} className="space-y-3">
-          <RichTextEditor
+<RichTextEditor
             value={newComment}
             onChange={setNewComment}
-            placeholder="Write a comment..."
+            placeholder={replyingTo ? `Replying to ${replyingTo.authorName}...` : "Write a comment... (Use #hashtags to set topics)"}
             teamMembers={teamMembers}
             minHeight="80px"
           />

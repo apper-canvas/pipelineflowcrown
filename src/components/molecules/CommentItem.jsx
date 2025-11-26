@@ -1,11 +1,11 @@
-import React, { useState } from 'react'
-import { toast } from 'react-toastify'
-import { format, formatDistanceToNow } from 'date-fns'
-import ApperIcon from '@/components/ApperIcon'
-import Button from '@/components/atoms/Button'
-import { commentsService } from '@/services/api/commentsService'
-import RichTextEditor from '@/components/molecules/RichTextEditor'
-import EmojiPicker from '@/components/molecules/EmojiPicker'
+import React, { useState } from "react";
+import { toast } from "react-toastify";
+import { format, formatDistanceToNow } from "date-fns";
+import commentsService from "@/services/api/commentsService";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import RichTextEditor from "@/components/molecules/RichTextEditor";
+import EmojiPicker from "@/components/molecules/EmojiPicker";
 
 const CommentItem = ({
   comment,
@@ -15,7 +15,8 @@ const CommentItem = ({
   onDelete,
   onReply,
   onQuote,
-  depth = 0,
+depth = 0,
+  showTopic = true,
   isPinned = false
 }) => {
   const [isEditing, setIsEditing] = useState(false)
@@ -120,7 +121,10 @@ const CommentItem = ({
     .slice(0, 3)
 
   return (
-    <div className={`${depth > 0 ? 'ml-8 border-l-2 border-slate-200 dark:border-slate-700 pl-4' : ''}`}>
+<div className={`comment-thread-item ${depth > 0 ? `ml-${Math.min(depth * 4, 16)} thread-depth-${Math.min(depth, 4)}` : ''}`}>
+      {depth > 0 && (
+        <div className={`thread-connector depth-${Math.min(depth, 4)}`}></div>
+      )}
       <div className={`group relative rounded-lg p-4 transition-all duration-200 ${
         comment.isResolved 
           ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700' 
@@ -368,7 +372,7 @@ const CommentItem = ({
         </div>
       </div>
 
-      {/* Replies */}
+{/* Replies */}
       {hasReplies && isExpanded && (
         <div className="mt-4 space-y-4">
           {comment.replies.map(reply => (
@@ -382,8 +386,18 @@ const CommentItem = ({
               onReply={onReply}
               onQuote={onQuote}
               depth={depth + 1}
+              showTopic={depth === 0}
             />
           ))}
+        </div>
+      )}
+      
+      {showTopic && (comment.topic || depth === 0) && (
+        <div className="mt-2">
+          <span className={`inline-flex items-center px-2 py-1 text-xs font-medium rounded-full topic-badge topic-${comment.topic || 'general'}`}>
+            <div className={`w-1.5 h-1.5 rounded-full mr-1 topic-dot topic-${comment.topic || 'general'}`}></div>
+            {(comment.topic || 'general').charAt(0).toUpperCase() + (comment.topic || 'general').slice(1)}
+          </span>
         </div>
       )}
     </div>

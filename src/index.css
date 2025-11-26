@@ -106,3 +106,154 @@
 .dark ::-webkit-scrollbar-thumb:hover {
   background: theme('colors.slate.500');
 }
+
+/* Comment Threading Styles */
+.comment-thread-item {
+  position: relative;
+}
+
+.thread-connector {
+  position: absolute;
+  left: -1rem;
+  top: 0;
+  width: 2px;
+  height: 100%;
+  background: theme('colors.slate.200');
+}
+
+.dark .thread-connector {
+  background: theme('colors.slate.700');
+}
+
+.thread-connector.depth-1 {
+  background: theme('colors.blue.200');
+}
+.thread-connector.depth-2 {
+  background: theme('colors.green.200');
+}
+.thread-connector.depth-3 {
+  background: theme('colors.purple.200');
+}
+.thread-connector.depth-4 {
+  background: theme('colors.orange.200');
+}
+
+.dark .thread-connector.depth-1 {
+  background: theme('colors.blue.600');
+}
+.dark .thread-connector.depth-2 {
+  background: theme('colors.green.600');
+}
+.dark .thread-connector.depth-3 {
+  background: theme('colors.purple.600');
+}
+.dark .thread-connector.depth-4 {
+  background: theme('colors.orange.600');
+}
+
+/* Topic Indicators */
+.topic-indicator.topic-technical {
+  background: theme('colors.blue.500');
+}
+.topic-indicator.topic-design {
+  background: theme('colors.purple.500');
+}
+.topic-indicator.topic-planning {
+  background: theme('colors.green.500');
+}
+.topic-indicator.topic-review {
+  background: theme('colors.orange.500');
+}
+.topic-indicator.topic-question {
+  background: theme('colors.yellow.500');
+}
+.topic-indicator.topic-urgent {
+  background: theme('colors.red.500');
+}
+.topic-indicator.topic-general {
+  background: theme('colors.slate.400');
+}
+
+/* Topic Badges */
+.topic-badge.topic-technical {
+  background: theme('colors.blue.50');
+  color: theme('colors.blue.700');
+}
+.topic-badge.topic-design {
+  background: theme('colors.purple.50');
+  color: theme('colors.purple.700');
+}
+.topic-badge.topic-planning {
+  background: theme('colors.green.50');
+  color: theme('colors.green.700');
+}
+.topic-badge.topic-review {
+  background: theme('colors.orange.50');
+  color: theme('colors.orange.700');
+}
+.topic-badge.topic-question {
+  background: theme('colors.yellow.50');
+  color: theme('colors.yellow.700');
+}
+.topic-badge.topic-urgent {
+  background: theme('colors.red.50');
+  color: theme('colors.red.700');
+}
+.topic-badge.topic-general {
+  background: theme('colors.slate.50');
+  color: theme('colors.slate.700');
+}
+
+/* Dark mode topic badges */
+.dark .topic-badge.topic-technical {
+  background: theme('colors.blue.900');
+  color: theme('colors.blue.300');
+}
+.dark .topic-badge.topic-design {
+  background: theme('colors.purple.900');
+  color: theme('colors.purple.300');
+}
+.dark .topic-badge.topic-planning {
+  background: theme('colors.green.900');
+  color: theme('colors.green.300');
+}
+.dark .topic-badge.topic-review {
+  background: theme('colors.orange.900');
+  color: theme('colors.orange.300');
+}
+.dark .topic-badge.topic-question {
+  background: theme('colors.yellow.900');
+  color: theme('colors.yellow.300');
+}
+.dark .topic-badge.topic-urgent {
+  background: theme('colors.red.900');
+  color: theme('colors.red.300');
+}
+.dark .topic-badge.topic-general {
+  background: theme('colors.slate.800');
+  color: theme('colors.slate.300');
+}
+
+/* Topic Dots */
+.topic-dot.topic-technical {
+  background: theme('colors.blue.500');
+}
+.topic-dot.topic-design {
+  background: theme('colors.purple.500');
+}
+.topic-dot.topic-planning {
+  background: theme('colors.green.500');
+}
+.topic-dot.topic-review {
+  background: theme('colors.orange.500');
+}
+.topic-dot.topic-question {
+  background: theme('colors.yellow.500');
+}
+.topic-dot.topic-urgent {
+  background: theme('colors.red.500');
+}
+.topic-dot.topic-general {
+  background: theme('colors.slate.400');
+}
+}
