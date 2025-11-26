@@ -22,6 +22,7 @@ const [formData, setFormData] = useState({
     status: "not-started",
     category: "follow-up",
 assignedTo: null,
+    assignmentHistory: [],
     relatedTo: "",
     relatedType: "contact",
     recurrenceType: "none",
@@ -40,7 +41,8 @@ assignedTo: null,
 if (task) {
       setFormData({
         ...task,
-        assignedTo: task.assignedTo || null,
+assignedTo: task.assignedTo || null,
+        assignmentHistory: task.assignmentHistory || [],
         dueDate: task.dueDate ? format(new Date(task.dueDate), "yyyy-MM-dd") : ""
       })
     } else {
@@ -52,7 +54,8 @@ title: "",
         status: "not-started",
         assignedTo: null,
         category: "follow-up",
-        assignedTo: "current-user",
+assignedTo: null,
+        assignmentHistory: [],
         relatedTo: "",
         relatedType: "contact",
         recurrenceType: "none",
@@ -249,10 +252,11 @@ title: "",
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Assigned To
               </label>
-              <AssigneeSelector
+<AssigneeSelector
                 value={formData.assignedTo}
                 onChange={(value) => setFormData({...formData, assignedTo: value})}
                 placeholder="Assign task to..."
+                className="flex-1"
               />
             </div>
 
@@ -669,10 +673,11 @@ const tasksByStatus = {
                           </div>
                         )}
                       </div>
-                      {task.assignedTo && (
+{task.assignedTo && (
                         <AssigneeDisplay 
                           assigneeId={task.assignedTo} 
-                          size="sm" 
+                          size="sm"
+                          showName={false}
                         />
                       )}
                     </div>

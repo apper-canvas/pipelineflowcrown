@@ -10,9 +10,11 @@ async getAll() {
     return [...tasks]
   },
 
-  async getByAssignee(assigneeId) {
+async getByAssignee(assigneeId) {
     await delay(300)
-    return tasks.filter(t => t.assignedTo === parseInt(assigneeId))
+    const id = parseInt(assigneeId)
+    if (!id || isNaN(id)) return []
+    return tasks.filter(t => t.assignedTo === id)
   },
 
   async getById(id) {
@@ -27,13 +29,19 @@ async getAll() {
   async create(taskData) {
     await delay(300)
 const now = new Date().toISOString()
-    const newTask = {
+const newTask = {
       ...taskData,
       Id: Math.max(...tasks.map(t => t.Id)) + 1,
       status: taskData.status || "not-started",
       category: taskData.category || "follow-up",
       assignedTo: taskData.assignedTo || null,
       assignedAt: taskData.assignedTo ? now : null,
+      assignmentHistory: taskData.assignedTo ? [{
+        assignedTo: taskData.assignedTo,
+        assignedAt: now,
+        assignedBy: 1, // Current user
+        status: 'active'
+      }] : [],
       createdAt: now,
       completedAt: taskData.status === "completed" ? now : null
     }
@@ -51,13 +59,25 @@ const now = new Date().toISOString()
 const now = new Date().toISOString()
     const previousAssignee = tasks[index].assignedTo
     const newAssignee = taskData.assignedTo
+    const assignmentChanged = newAssignee !== previousAssignee
+    
+    // Prepare assignment history entry if assignment changed
+    const currentHistory = tasks[index].assignmentHistory || []
+    const newHistoryEntry = assignmentChanged ? {
+      assignedTo: newAssignee,
+      assignedAt: now,
+      assignedBy: 1, // Current user
+      previousAssignee: previousAssignee,
+      status: newAssignee ? 'active' : 'unassigned'
+    } : null
     
     const updatedTask = {
       ...tasks[index],
       ...taskData,
       Id: parseInt(id),
       assignedTo: newAssignee || null,
-      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : tasks[index].assignedAt,
+      assignedAt: assignmentChanged && newAssignee ? now : tasks[index].assignedAt,
+      assignmentHistory: newHistoryEntry ? [...currentHistory, newHistoryEntry] : currentHistory,
       completedAt: taskData.status === "completed" && !tasks[index].completedAt ? now : (taskData.status === "completed" ? tasks[index].completedAt : null),
       updatedAt: now
     }

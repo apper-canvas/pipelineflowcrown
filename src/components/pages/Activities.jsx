@@ -23,8 +23,23 @@ export default function Activities() {
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all")
-  const [selectedPriority, setSelectedPriority] = useState("all")
+const [selectedPriority, setSelectedPriority] = useState("all")
   const [selectedAssignee, setSelectedAssignee] = useState("all")
+  
+  // Initialize form with assignment history support
+  const initialFormData = {
+    title: '',
+    type: 'meeting',
+    status: 'scheduled',
+    priority: 'medium',
+    description: '',
+    dueDate: '',
+    assignedTo: null,
+    assignmentHistory: [],
+    contactId: '',
+    dealId: '',
+    notes: ''
+  }
   const [showActivityModal, setShowActivityModal] = useState(false)
   const [editingActivity, setEditingActivity] = useState(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -369,10 +384,11 @@ if (loading) return <Loading />
                         <span>{formatActivityTime(activity.createdAt)}</span>
                       </div>
                     </div>
-                    {activity.assignedTo && (
+{activity.assignedTo && (
                       <AssigneeDisplay 
                         assigneeId={activity.assignedTo} 
-                        size="sm" 
+                        size="sm"
+                        showName={false}
                       />
                     )}
                   </div>
@@ -516,8 +532,10 @@ function ActivityModal({ activity, contacts, deals, onClose, onSave, isSubmittin
     type: activity?.type || 'call',
     description: activity?.description || '',
     notes: activity?.notes || '',
-    contactId: activity?.contactId || '',
+contactId: activity?.contactId || '',
     dealId: activity?.dealId || '',
+    assignedTo: activity?.assignedTo || null,
+    assignmentHistory: activity?.assignmentHistory || [],
     priority: activity?.priority || 'medium',
     assignedTo: activity?.assignedTo || null,
     duration: activity?.duration || '',
@@ -748,11 +766,15 @@ return (
             </div>
 </div>
 
-          <div className="space-y-1">
+<div className="space-y-1">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Assigned To
             </label>
             <AssigneeSelector
+              value={formData.assignedTo}
+              onChange={(value) => setFormData({...formData, assignedTo: value})}
+              placeholder="Assign activity to..."
+              className="flex-1"
               value={formData.assignedTo}
               onChange={(value) => setFormData({...formData, assignedTo: value})}
               placeholder="Assign activity to..."

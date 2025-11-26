@@ -1,17 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { teamMemberService } from '@/services/api/teamMemberService'
 
-export default function AssigneeDisplay({ assigneeId, size = "sm", showName = false, className = "" }) {
+export default function AssigneeDisplay({ assigneeId, assignees, size = "sm", showName = false, className = "" }) {
   const [assignee, setAssignee] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (assigneeId) {
+if (assigneeId || (assignees && assignees.length > 0)) {
       loadAssignee()
     } else {
       setLoading(false)
     }
-  }, [assigneeId])
+  }, [assigneeId, assignees])
 
   const loadAssignee = async () => {
     try {
@@ -37,35 +37,52 @@ export default function AssigneeDisplay({ assigneeId, size = "sm", showName = fa
     lg: "w-12 h-12 text-base"
   }
 
-  if (!assigneeId || loading) {
+if ((!assigneeId && (!assignees || assignees.length === 0)) || loading) {
     return null
   }
 
-  if (!assignee) {
-    return <div className={`${sizeClasses[size]} rounded-full bg-slate-300 ${className}`}></div>
+// Handle multiple assignees (future feature) or single assignee
+  const displayAssignees = assignees && assignees.length > 0 ? assignees : (assignee ? [assignee] : [])
+  
+  if (displayAssignees.length === 0) {
+    return <div className={`${sizeClasses[size]} rounded-full bg-slate-300 ${className}`} title="Unassigned"></div>
   }
+
+  // For now, display first assignee (single assignee system)
+  // In future: handle multiple assignees with overlap display
+  const primaryAssignee = displayAssignees[0]
+  const hasMultiple = displayAssignees.length > 1
 
   return (
     <div className={`flex items-center space-x-2 ${className}`}>
-      {assignee.avatar ? (
-        <img 
-          src={assignee.avatar} 
-          alt={assignee.name}
-          className={`${sizeClasses[size]} rounded-full object-cover`}
-          title={assignee.name}
-        />
-      ) : (
-        <div 
-          className={`${sizeClasses[size]} rounded-full bg-primary-500 flex items-center justify-center`}
-          title={assignee.name}
-        >
-          <span className="font-medium text-white">
-            {getInitials(assignee.name)}
-          </span>
-        </div>
-      )}
-      {showName && (
-        <span className="text-sm font-medium text-slate-700">{assignee.name}</span>
+      <div className="relative">
+        {primaryAssignee.avatar ? (
+          <img 
+            src={primaryAssignee.avatar} 
+            alt={primaryAssignee.name}
+            className={`${sizeClasses[size]} rounded-full object-cover`}
+            title={hasMultiple ? `${primaryAssignee.name} +${displayAssignees.length - 1} more` : primaryAssignee.name}
+          />
+        ) : (
+          <div 
+            className={`${sizeClasses[size]} rounded-full bg-primary-500 flex items-center justify-center`}
+            title={hasMultiple ? `${primaryAssignee.name} +${displayAssignees.length - 1} more` : primaryAssignee.name}
+          >
+            <span className="font-medium text-white text-xs">
+              {getInitials(primaryAssignee.name)}
+            </span>
+          </div>
+        )}
+        {hasMultiple && (
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full flex items-center justify-center">
+            <span className="text-xs text-white font-bold">+</span>
+          </div>
+        )}
+      </div>
+{showName && (
+        <span className="text-sm font-medium text-slate-700">
+          {hasMultiple ? `${primaryAssignee.name} +${displayAssignees.length - 1}` : primaryAssignee.name}
+        </span>
       )}
     </div>
   )

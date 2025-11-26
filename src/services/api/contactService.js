@@ -10,9 +10,11 @@ async getAll() {
     return [...contacts]
   },
 
-  async getByAssignee(assigneeId) {
+async getByAssignee(assigneeId) {
     await delay(400)
-    return contacts.filter(c => c.assignedTo === parseInt(assigneeId))
+    const id = parseInt(assigneeId)
+    if (!id || isNaN(id)) return []
+    return contacts.filter(c => c.assignedTo === id)
   },
 
   async getById(id) {
@@ -43,13 +45,19 @@ async create(contactData) {
     }
     
 const now = new Date().toISOString()
-    const newContact = {
+const newContact = {
       ...contactData,
       Id: Math.max(...contacts.map(c => c.Id)) + 1,
       avatar: contactData.avatar || "",
       tags: contactData.tags || [],
       assignedTo: contactData.assignedTo || null,
       assignedAt: contactData.assignedTo ? now : null,
+      assignmentHistory: contactData.assignedTo ? [{
+        assignedTo: contactData.assignedTo,
+        assignedAt: now,
+        assignedBy: 1, // Current user - could be passed as parameter
+        status: 'active'
+      }] : [],
       createdAt: now,
       lastContactedAt: now
     }
@@ -80,15 +88,27 @@ async update(id, contactData) {
     }
     
 const now = new Date().toISOString()
-    const previousAssignee = contacts[index].assignedTo
+const previousAssignee = contacts[index].assignedTo
     const newAssignee = contactData.assignedTo
+    const assignmentChanged = newAssignee !== previousAssignee
+    
+    // Prepare assignment history entry if assignment changed
+    const currentHistory = contacts[index].assignmentHistory || []
+    const newHistoryEntry = assignmentChanged ? {
+      assignedTo: newAssignee,
+      assignedAt: now,
+      assignedBy: 1, // Current user - could be passed as parameter
+      previousAssignee: previousAssignee,
+      status: newAssignee ? 'active' : 'unassigned'
+    } : null
     
     const updatedContact = {
       ...contacts[index],
       ...contactData,
       Id: parseInt(id),
       assignedTo: newAssignee || null,
-      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : contacts[index].assignedAt,
+      assignedAt: assignmentChanged && newAssignee ? now : contacts[index].assignedAt,
+      assignmentHistory: newHistoryEntry ? [...currentHistory, newHistoryEntry] : currentHistory,
       updatedAt: now,
       lastContactedAt: now
     }

@@ -10,9 +10,11 @@ async getAll() {
     return [...deals]
   },
 
-  async getByAssignee(assigneeId) {
+async getByAssignee(assigneeId) {
     await delay(400)
-    return deals.filter(d => d.dealOwner === parseInt(assigneeId))
+    const id = parseInt(assigneeId)
+    if (!id || isNaN(id)) return []
+    return deals.filter(d => d.dealOwner === id)
   },
 
   async getById(id) {
@@ -34,6 +36,12 @@ const newDeal = {
       probability: parseInt(dealData.probability) || 25,
       dealOwner: dealData.dealOwner || null,
       assignedAt: dealData.dealOwner ? now : null,
+      assignmentHistory: dealData.dealOwner ? [{
+        assignedTo: dealData.dealOwner,
+        assignedAt: now,
+        assignedBy: 1, // Current user
+        status: 'active'
+      }] : [],
       createdAt: now,
       updatedAt: now,
       stageChangedAt: dealData.stageChangedAt || now,
@@ -59,6 +67,17 @@ async update(id, dealData) {
     
 const previousOwner = currentDeal.dealOwner
     const newOwner = dealData.dealOwner
+    const assignmentChanged = newOwner !== previousOwner
+    
+    // Prepare assignment history entry if assignment changed
+    const currentHistory = currentDeal.assignmentHistory || []
+    const newHistoryEntry = assignmentChanged ? {
+      assignedTo: newOwner,
+      assignedAt: now,
+      assignedBy: 1, // Current user
+      previousAssignee: previousOwner,
+      status: newOwner ? 'active' : 'unassigned'
+    } : null
     
     const updatedDeal = {
       ...currentDeal,
@@ -67,7 +86,8 @@ const previousOwner = currentDeal.dealOwner
       amount: parseFloat(dealData.amount) || currentDeal.amount,
       probability: parseInt(dealData.probability) || currentDeal.probability,
       dealOwner: newOwner || null,
-      assignedAt: (newOwner && newOwner !== previousOwner) ? now : currentDeal.assignedAt,
+      assignedAt: assignmentChanged && newOwner ? now : currentDeal.assignedAt,
+      assignmentHistory: newHistoryEntry ? [...currentHistory, newHistoryEntry] : currentHistory,
       updatedAt: now
     }
     

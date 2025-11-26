@@ -120,10 +120,11 @@ async getAll() {
   },
 
   async getByAssignee(assigneeId) {
-    await delay(350)
-    return leads.filter(l => l.assignedTo === parseInt(assigneeId))
+await delay(350)
+    const id = parseInt(assigneeId)
+    if (!id || isNaN(id)) return []
+    return leads.filter(l => l.assignedTo === id)
   },
-
   async getById(id) {
     await delay(200)
     const lead = leads.find(l => l.Id === parseInt(id))
@@ -156,6 +157,12 @@ const newLead = {
       timeline: leadData.timeline || null,
       assignedTo: leadData.assignedTo || null,
       assignedAt: leadData.assignedTo ? now : null,
+      assignmentHistory: leadData.assignedTo ? [{
+        assignedTo: leadData.assignedTo,
+        assignedAt: now,
+        assignedBy: 1, // Current user
+        status: 'active'
+      }] : [],
       createdAt: now,
       updatedAt: now,
       qualification: leadData.qualification || {
@@ -193,6 +200,17 @@ async update(id, leadData) {
 const previousAssignee = previousLead.assignedTo
     const newAssignee = leadData.assignedTo
     const now = new Date().toISOString()
+    const assignmentChanged = newAssignee !== previousAssignee
+    
+    // Prepare assignment history entry if assignment changed
+    const currentHistory = previousLead.assignmentHistory || []
+    const newHistoryEntry = assignmentChanged ? {
+      assignedTo: newAssignee,
+      assignedAt: now,
+      assignedBy: 1, // Current user
+      previousAssignee: previousAssignee,
+      status: newAssignee ? 'active' : 'unassigned'
+    } : null
     
     const updatedLead = {
       ...previousLead,
@@ -202,7 +220,8 @@ const previousAssignee = previousLead.assignedTo
       budget: leadData.budget ? parseFloat(leadData.budget) : previousLead.budget,
       timeline: leadData.timeline || previousLead.timeline,
       assignedTo: newAssignee || null,
-      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : previousLead.assignedAt,
+      assignedAt: assignmentChanged && newAssignee ? now : previousLead.assignedAt,
+      assignmentHistory: newHistoryEntry ? [...currentHistory, newHistoryEntry] : currentHistory,
       qualification: leadData.qualification || previousLead.qualification || {
         budget: false,
         authority: false,

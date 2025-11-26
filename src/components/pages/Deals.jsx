@@ -22,7 +22,8 @@ const [formData, setFormData] = useState({
     closeDate: "",
     contactId: "",
     notes: "",
-    dealOwner: null,
+dealOwner: null,
+    assignmentHistory: [],
     stageChangedAt: new Date().toISOString()
   })
   const [contacts, setContacts] = useState([])
@@ -37,8 +38,9 @@ const [formData, setFormData] = useState({
   useEffect(() => {
 if (deal) {
 setFormData({
-        ...deal,
+...deal,
         dealOwner: deal.dealOwner || null,
+        assignmentHistory: deal.assignmentHistory || [],
         closeDate: deal.closeDate ? format(new Date(deal.closeDate), "yyyy-MM-dd") : ""
       })
     } else {
@@ -50,7 +52,8 @@ amount: "",
         closeDate: "",
         contactId: "",
         notes: "",
-        dealOwner: null,
+dealOwner: null,
+        assignmentHistory: [],
         stageChangedAt: new Date().toISOString()
       })
     }
@@ -186,10 +189,11 @@ amount: "",
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
               Deal Owner
             </label>
-            <AssigneeSelector
+<AssigneeSelector
               value={formData.dealOwner}
               onChange={(value) => setFormData({...formData, dealOwner: value})}
               placeholder="Assign deal owner..."
+              className="flex-1"
             />
           </div>
 

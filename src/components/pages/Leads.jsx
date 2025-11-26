@@ -25,7 +25,8 @@ title: "",
     source: "website",
     stage: "new",
     notes: "",
-    assignedTo: null,
+assignedTo: null,
+    assignmentHistory: [],
     qualification: {
       budget: false,
       authority: false,
@@ -52,7 +53,8 @@ setFormData({
         source: lead.source || "website",
         stage: lead.stage || "new",
         notes: lead.notes || "",
-        assignedTo: lead.assignedTo || null,
+assignedTo: lead.assignedTo || null,
+        assignmentHistory: lead.assignmentHistory || [],
         qualification: lead.qualification || {
           budget: false,
           authority: false,
@@ -76,7 +78,8 @@ title: "",
         source: "website",
         stage: "new",
         notes: "",
-        assignedTo: null,
+assignedTo: null,
+        assignmentHistory: [],
         qualification: {
           budget: false,
           authority: false,
@@ -247,10 +250,11 @@ if (!formData.title.trim() || !formData.company.trim()) {
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">
                 Assigned To
               </label>
-              <AssigneeSelector
+<AssigneeSelector
                 value={formData.assignedTo}
                 onChange={(value) => setFormData({...formData, assignedTo: value})}
                 placeholder="Assign to sales rep..."
+                className="flex-1"
               />
             </div>
           </div>
@@ -544,10 +548,11 @@ return (
                           </Badge>
                         )}
                       </div>
-                      {lead.assignedTo && (
+{lead.assignedTo && (
                         <AssigneeDisplay 
                           assigneeId={lead.assignedTo} 
-                          size="sm" 
+                          size="sm"
+                          showName={false}
                         />
                       )}
                     </div>

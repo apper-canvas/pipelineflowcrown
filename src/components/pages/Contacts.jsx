@@ -22,7 +22,8 @@ const ContactModal = ({ isOpen, contact, onClose, onSave }) => {
     company: "",
     position: "",
 tags: [],
-    assignedTo: null
+assignedTo: null,
+    assignmentHistory: []
   });
 const [saving, setSaving] = useState(false);
 
@@ -35,7 +36,8 @@ useEffect(() => {
         company: contact.company || "",
         position: contact.position || "",
         tags: contact.tags || [],
-        assignedTo: contact.assignedTo || null
+assignedTo: contact.assignedTo || null,
+        assignmentHistory: contact.assignmentHistory || []
       });
     } else {
       setFormData({
@@ -44,7 +46,8 @@ useEffect(() => {
         phone: "",
         company: "",
         position: "",
-        assignedTo: null,
+assignedTo: null,
+        assignmentHistory: [],
         tags: []
       });
     }
@@ -135,9 +138,10 @@ if (!isOpen) return null;
               Assigned To
             </label>
             <AssigneeSelector
-              value={formData.assignedTo}
+value={formData.assignedTo}
               onChange={(value) => setFormData({...formData, assignedTo: value})}
               placeholder="Assign to team member..."
+              className="flex-1"
             />
           </div>
           
@@ -244,7 +248,7 @@ const applyFilters = () => {
     if (assigneeFilter === "current-user") {
       // Note: teamMemberService would need to be imported and implemented
       // const currentUser = teamMemberService.getCurrentUser();
-      // filtered = filtered.filter(contact => contact.assignedTo === currentUser.Id);
+// filtered = filtered.filter(contact => contact.assignedTo === currentUser.Id);
     } else if (assigneeFilter === "unassigned") {
       filtered = filtered.filter(contact => !contact.assignedTo);
     }
@@ -660,9 +664,10 @@ message={searchTerm ? "Try adjusting your search terms." : "Start building your 
                               )}
                             </div>
                             {contact.assignedTo && (
-                              <AssigneeDisplay 
+<AssigneeDisplay 
                                 assigneeId={contact.assignedTo} 
-                                size="sm" 
+                                size="sm"
+                                showName={false}
                               />
                             )}
                           </div>
@@ -782,10 +787,11 @@ message={searchTerm ? "Try adjusting your search terms." : "Start building your 
                         <h3 className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                           {contact.name}
                         </h3>
-                        {contact.assignedTo && (
+{contact.assignedTo && (
                           <AssigneeDisplay 
                             assigneeId={contact.assignedTo} 
-                            size="sm" 
+                            size="sm"
+                            showName={false}
                           />
                         )}
                       </div>

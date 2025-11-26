@@ -10,9 +10,11 @@ async getAll() {
     return [...activities]
   },
 
-  async getByAssignee(assigneeId) {
+async getByAssignee(assigneeId) {
     await delay(300)
-    return activities.filter(a => a.assignedTo === parseInt(assigneeId))
+    const id = parseInt(assigneeId)
+    if (!id || isNaN(id)) return []
+    return activities.filter(a => a.assignedTo === id)
   },
 
   async getRecent(limit = 10) {
@@ -26,10 +28,16 @@ async create(activityData) {
     await delay(200)
     const now = new Date().toISOString()
 const newActivity = {
-      ...activityData,
+...activityData,
       Id: Math.max(...activities.map(a => a.Id)) + 1,
       assignedTo: activityData.assignedTo || null,
       assignedAt: activityData.assignedTo ? now : null,
+      assignmentHistory: activityData.assignedTo ? [{
+        assignedTo: activityData.assignedTo,
+        assignedAt: now,
+        assignedBy: 1, // Current user
+        status: 'active'
+      }] : [],
       createdAt: now,
       updatedAt: now,
       // Type-specific field defaults
@@ -54,13 +62,25 @@ const newActivity = {
 const now = new Date().toISOString()
     const previousAssignee = activities[index].assignedTo
     const newAssignee = activityData.assignedTo
+    const assignmentChanged = newAssignee !== previousAssignee
+    
+    // Prepare assignment history entry if assignment changed
+    const currentHistory = activities[index].assignmentHistory || []
+    const newHistoryEntry = assignmentChanged ? {
+      assignedTo: newAssignee,
+      assignedAt: now,
+      assignedBy: 1, // Current user
+      previousAssignee: previousAssignee,
+      status: newAssignee ? 'active' : 'unassigned'
+    } : null
     
     const updatedActivity = {
       ...activities[index],
       ...activityData,
       Id: parseInt(id),
       assignedTo: newAssignee || null,
-      assignedAt: (newAssignee && newAssignee !== previousAssignee) ? now : activities[index].assignedAt,
+      assignedAt: assignmentChanged && newAssignee ? now : activities[index].assignedAt,
+      assignmentHistory: newHistoryEntry ? [...currentHistory, newHistoryEntry] : currentHistory,
       updatedAt: now
     }
     activities[index] = updatedActivity

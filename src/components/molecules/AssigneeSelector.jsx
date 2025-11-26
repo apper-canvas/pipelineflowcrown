@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 import ApperIcon from '@/components/ApperIcon'
 import { teamMemberService } from '@/services/api/teamMemberService'
 
-export default function AssigneeSelector({ value, onChange, placeholder = "Assign to...", className = "" }) {
+export default function AssigneeSelector({ value, values, onChange, placeholder = "Assign to...", multiple = false, className = "" }) {
   const [teamMembers, setTeamMembers] = useState([])
   const [isOpen, setIsOpen] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -24,20 +24,28 @@ export default function AssigneeSelector({ value, onChange, placeholder = "Assig
     }
   }
 
-  const selectedMember = teamMembers.find(m => m.Id === value)
+const selectedMember = multiple ? null : teamMembers.find(m => m.Id === value)
+  const selectedMembers = multiple && values ? teamMembers.filter(m => values.includes(m.Id)) : []
   const filteredMembers = teamMembers.filter(member =>
     member.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     member.role.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
-  const handleSelect = (memberId) => {
-    onChange(memberId)
-    setIsOpen(false)
-    setSearchTerm("")
+const handleSelect = (memberId) => {
+    if (multiple && values) {
+      const newValues = values.includes(memberId) 
+        ? values.filter(id => id !== memberId)
+        : [...values, memberId]
+      onChange(newValues)
+    } else {
+      onChange(memberId)
+      setIsOpen(false)
+      setSearchTerm("")
+    }
   }
 
-  const handleUnassign = () => {
-    onChange(null)
+const handleUnassign = () => {
+    onChange(multiple ? [] : null)
     setIsOpen(false)
   }
 
@@ -53,7 +61,36 @@ export default function AssigneeSelector({ value, onChange, placeholder = "Assig
         className="input-field flex items-center justify-between w-full text-left"
       >
         <div className="flex items-center space-x-2">
-          {selectedMember ? (
+{multiple && selectedMembers.length > 0 ? (
+            <div className="flex items-center space-x-2">
+              <div className="flex -space-x-1">
+                {selectedMembers.slice(0, 3).map((member) => (
+                  member.avatar ? (
+                    <img 
+                      key={member.Id}
+                      src={member.avatar} 
+                      alt={member.name}
+                      className="w-6 h-6 rounded-full object-cover border-2 border-white"
+                    />
+                  ) : (
+                    <div key={member.Id} className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center border-2 border-white">
+                      <span className="text-xs font-medium text-white">
+                        {getInitials(member.name)}
+                      </span>
+                    </div>
+                  )
+                ))}
+                {selectedMembers.length > 3 && (
+                  <div className="w-6 h-6 rounded-full bg-slate-500 flex items-center justify-center border-2 border-white">
+                    <span className="text-xs font-medium text-white">+{selectedMembers.length - 3}</span>
+                  </div>
+                )}
+              </div>
+              <span className="text-sm font-medium">
+                {selectedMembers.length === 1 ? selectedMembers[0].name : `${selectedMembers.length} assigned`}
+              </span>
+            </div>
+          ) : selectedMember ? (
             <>
               {selectedMember.avatar ? (
                 <img 
@@ -98,7 +135,7 @@ export default function AssigneeSelector({ value, onChange, placeholder = "Assig
               <div className="p-3 text-center text-slate-500">Loading...</div>
             ) : (
               <>
-                {value && (
+{(value || (multiple && values && values.length > 0)) && (
                   <button
                     type="button"
                     onClick={handleUnassign}
@@ -110,12 +147,12 @@ export default function AssigneeSelector({ value, onChange, placeholder = "Assig
                 )}
                 
                 {filteredMembers.map(member => (
-                  <button
+<button
                     key={member.Id}
                     type="button"
                     onClick={() => handleSelect(member.Id)}
                     className={`w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center space-x-3 ${
-                      value === member.Id ? 'bg-primary-50 text-primary-700' : ''
+                      (multiple ? values?.includes(member.Id) : value === member.Id) ? 'bg-primary-50 text-primary-700' : ''
                     }`}
                   >
                     {member.avatar ? (
